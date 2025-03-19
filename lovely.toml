@@ -1,0 +1,1020 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''function love.load()'''
+position = "before"
+payload = '''Jen = {}'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "globals.lua"
+pattern = "EDITION = {1,1,1,1},"
+position = "before"
+payload = '''jen_RGB = {0,0,0,1},
+jen_RGB_HUE = 0,
+almanac = {0,0,1,1},'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if SMODS.has_enhancement(scoring_hand[i], 'm_glass') and not scoring_hand[i].debuff and pseudorandom('glass') < cry_prob(scoring_hand[i].ability.cry_prob, scoring_hand[i].ability.extra or G.P_CENTERS.m_glass.config.extra, scoring_hand[i].ability.cry_rigged)/(scoring_hand[i].ability.name == 'Glass Card' and scoring_hand[i].ability.extra or G.P_CENTERS.m_glass.config.extra) then"
+position = "before"
+payload = '''if scoring_hand[i].config.center.disposable and not scoring_hand[i].debuff then destroyed = true end
+if scoring_hand[i].config.center.set == 'Booster' or scoring_hand[i].config.center.set == 'Voucher' then
+	destroyed = true
+	local sizemul = (scoring_hand[i].config.center.set == 'Booster' and 1.27 or 1)
+	Q(function()
+		local ncard = Card(
+			G.play.T.x + G.play.T.w / 2 - G.CARD_W * sizemul / 2,
+			G.play.T.y + G.play.T.h / 2 - G.CARD_H * sizemul / 2,
+			G.CARD_W * sizemul,
+			G.CARD_H * sizemul,
+			G.P_CARDS.empty,
+			G.P_CENTERS[scoring_hand[i].config.center.key],
+			{ bypass_discovery_center = true, bypass_discovery_ui = true }
+		)
+		ncard:start_materialize()
+		Q(function()
+			if ncard then
+				G.consumeables:emplace(ncard)
+			end
+		return true end, 0.25)
+	return true end)
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if G.GAME.blind:press_play() then"
+position = "before"
+payload = '''local goob = (jl.fc('j_jen_goob') or {})
+if (goob.ability or {}).active then
+	local lh = jl.fc('j_jen_goob_lefthand', 'hand')
+	if lh then
+		local did_discard = false
+		for i = 1, #G.hand.cards do
+			local tar = G.hand.cards[i]
+			if tar then
+				if tar == lh then
+					break
+				else
+					if not tar.highlighted and tar:xpos() < lh:xpos() then
+						if not did_discard then
+							did_discard = true
+							goob:speak(goob_blurbs.play, G.C.RED)
+						end
+						draw_card(G.hand, G.discard, 100, 'down', false, tar)
+						Q(function()
+							play_sound('tarot1')
+							lh:juice_up(0.5, 0.8)
+						return true end)
+					end
+				end
+			end
+		end
+	end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        blockable = false,
+        blocking = false,
+        func = (function() check_for_unlock{type = 'upgrade_hand', hand = hand, level = G.GAME.hands[hand].level} return true end)
+    }))
+'''
+position = "at"
+payload = ""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if amt > 0 or amt < 0 then"
+position = "at"
+payload = "if to_big(amt) > to_big(0) or to_big(amt) < to_big(0) then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[math.min(vals.level, 7)]"
+position = "at"
+payload = "G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[vals.level] or G.C.WHITE"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "colours = {(G.GAME.hands[cfg.hand_type].level==1 and G.C.UI.TEXT_DARK or G.C.HAND_LEVELS[math.min(7, G.GAME.hands[cfg.hand_type].level)])}"
+position = "at"
+payload = "colours = {G.GAME.hands[cfg.hand_type].level <= 7200 and G.C.HAND_LEVELS['!' .. G.GAME.hands[cfg.hand_type].level] or G.C.HAND_LEVELS[G.GAME.hands[cfg.hand_type].level] or G.C.UI.TEXT_DARK}"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''{n=G.UIT.C, config={align = "cm", padding = 0.01, r = 0.1, colour = G.C.HAND_LEVELS[math.min(7, G.GAME.hands[handname].level)], minw = 1.5, outline = 0.8, outline_colour = G.C.WHITE}, nodes={'''
+position = "at"
+payload = '''{n=G.UIT.C, config={align = "cm", padding = 0.01, r = 0.1, colour = G.C.HAND_LEVELS[G.GAME.hands[handname].level] or G.C.WHITE, minw = 1.5, outline = 0.8, outline_colour = G.C.WHITE}, nodes={'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/text.lua"
+pattern = "self.string = self.strings[self.focused_string].string"
+position = "at"
+payload = "if self.strings and self.focused_string and self.strings[self.focused_string] and self.strings[self.focused_string].string then self.string = self.strings[self.focused_string].string else return end"
+match_indent = true
+
+[[patches]]
+[patches.regex]
+target = "functions/state_events.lua"
+pattern = '''hand_chips\*mult'''
+position = "at"
+payload = "get_chipmult_sum(hand_chips, mult)"
+match_indent = true
+
+[[patches]]
+[patches.regex]
+target = "functions/state_events.lua"
+pattern = '''to_big\(hand_chips\)\*mult'''
+position = "at"
+payload = "get_chipmult_sum(hand_chips, mult)"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if to_big(hand_chips)*mult > to_big(0) then"
+position = "at"
+payload = "if get_chipmult_sum(hand_chips, mult) > to_big(0) then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.screenwipecard = Card(1, 1, G.CARD_W, G.CARD_H, pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base)"
+position = "before"
+payload = "Jen.initialising = true"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "table.sort(scoring_hand, function (a, b) return a.T.x < b.T.x end )"
+position = "after"
+payload = '''if not (G.GAME.blind and G.GAME.blind.name == "The Card" and not G.GAME.blind.disabled) and (next(SMODS.find_card('j_jen_crimbo')) or next(SMODS.find_card('j_jen_faceless'))) then
+	for i = 1, #G.hand.cards do
+		if not G.hand.cards[i]:gc().unhighlightable then
+			table.insert(scoring_hand, G.hand.cards[i])
+		end
+	end
+end
+if not (G.GAME.blind and G.GAME.blind.name == "The Card" and not G.GAME.blind.disabled) and next(SMODS.find_card('j_jen_faceless')) then
+	for i = 1, #G.deck.cards do
+		if not G.deck.cards[i]:gc().unhighlightable then
+			table.insert(scoring_hand, G.deck.cards[i])
+		end
+	end
+	for i = 1, #G.play.cards do
+		if not G.play.cards[i]:gc().unhighlightable then
+			table.insert(scoring_hand, G.play.cards[i])
+		end
+	end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if context.cardarea == G.play then"
+position = "after"
+payload = '''if card.edition and card.edition.jen_wee and card.playing_card and (context.card or {}) == card then
+	card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'), colour = G.C.FILTER})
+	card.ability.wee_upgrades = (card.ability.wee_upgrades or 0) + 1
+	card.ability.perma_bonus = (card.ability.perma_bonus or 0) + (((card.ability.name or '') == 'Stone Card' or card.config.center.no_rank) and 25 or card:get_id() == 2 and 60 or (card:get_id() * 3))
+	card_eval_status_text(card, 'extra', nil, nil, nil, {message = number_format(card.ability.perma_bonus), colour = G.C.CHIPS})
+end
+if (((card.config or {}).center or {}).set or '') == 'Colour' and Jen.hv('colour', 1) then
+	trigger_colour_end_of_round(card)
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "elseif context.individual then"
+position = "after"
+payload = '''if context.cardarea == G.play then
+	if self.edition and self.edition.jen_wee and context.other_card:get_id() == 2 then
+		if ((self.config or {}).center or {}).wee_incompatible or ((self.config or {}).center or {}).key == 'j_cry_weegaming' then
+			card_eval_status_text(self, 'extra', nil, nil, nil, {message = 'Can\'t upgrade!', nopeus_again = true, colour = G.C.RED})
+		else
+			self.edition.twos_scored = (self.edition.twos_scored or 0) + (G.GAME.weeck and 3 or 1)
+			card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex') .. " : " .. (tostring(100 + (8*self.edition.twos_scored)) .. '%'), colour = G.C.DARK_EDITION})
+			self:remove_from_deck()
+			cry_misprintize(self, {min = 1 + (0.08 * self.edition.twos_scored),max = 1 + (0.08 * self.edition.twos_scored)})
+			self:add_to_deck()
+		end
+	end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "self.VT.h = self.T.H"
+position = "at"
+payload = '''if not self.originalsize then self.originalsize = {self.T.w, self.T.h} end
+if cardTable.edition and cardTable.edition.jen_wee then
+	self.T.w = self.T.w / Jen.config.wee_sizemod
+	self.T.h = self.T.h / Jen.config.wee_sizemod
+elseif cardTable.edition and cardTable.edition.jen_jumbo then
+	self.T.w = self.T.w * Jen.config.wee_sizemod
+	self.T.h = self.T.h * Jen.config.wee_sizemod
+end
+self.VT.h = self.T.h'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "last_tarot_planet = nil,"
+position = "before"
+payload = '''
+	straddle = 0,
+	relief = 0,
+	tension = 0,
+	life = 100,
+	max_life = 100,
+	shield = 0,
+	max_shield = 0,
+	straddle_disp = 0,
+	life_disp = 100,
+	max_life_disp = 100,
+	shield_disp = 0,
+	max_shield_disp = 0,
+	suits = {
+	},
+	ranks = {
+	},
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "G.GAME.blind:load(saveTable.BLIND)"
+position = "after"
+payload = '''Q(function() update_operator_display() return true end)
+for k, v in pairs(G.GAME.hands) do
+	manage_level_colour(v.level)
+end
+for k, v in pairs(G.GAME.suits) do
+	manage_level_colour(v.level)
+end
+for k, v in pairs(G.GAME.ranks) do
+	manage_level_colour(v.level)
+end
+Jen:delete_hardbans()'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "game_chips = self.HUD:get_UIE_by_ID('chip_UI_count'),"
+position = "after"
+payload = "op = self.HUD:get_UIE_by_ID('chipmult_op'),"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = 'button = not G.SETTINGS.tutorial_complete and "start_run" or "setup_run"'
+position = "at"
+payload = 'func = "isomeganumenabled", button = not G.SETTINGS.tutorial_complete and "start_run" or "setup_run"'
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "label = {localize('b_play_cap')}"
+position = "at"
+payload = "label = {(Big and Big.arrow) and localize('b_play_cap') or 'OMEGANUM NOT ENABLED, GO TO TALISMAN SETTINGS'}"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "G.ARGS.score_intensity.earned_score = G.GAME.current_round.current_hand.chips*G.GAME.current_round.current_hand.mult"
+position = "at"
+payload = '''
+local bigzero = to_big(0)
+if not G.GAME.blind or to_big(G.GAME.blind.chips or 0) <= bigzero then
+	G.ARGS.score_intensity.earned_score = 0
+else
+	G.ARGS.score_intensity.earned_score = get_chipmult_sum(G.GAME.current_round.current_hand.chips, G.GAME.current_round.current_hand.mult)
+end
+bigzero = nil
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "G.ARGS.score_intensity.organ = G.video_organ or G.ARGS.score_intensity.required_score > 0 and math.max(math.min(0.4, 0.1*math.log(G.ARGS.score_intensity.earned_score/(G.ARGS.score_intensity.required_score+1), 5)),0.) or 0"
+position = "at"
+payload = '''
+if Big.arrow and G.GAME.blind and to_big(G.GAME.blind.chips or 0) > to_big(0) then
+	local notzero = to_big(G.ARGS.score_intensity.required_score) > to_big(0)
+	local e_s = to_big(G.ARGS.score_intensity.earned_score)
+	local r_s = to_big(G.ARGS.score_intensity.required_score+1)
+	local googol = to_big(1e100)
+	local requirement5 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s:arrow(8, googol)), 5))),0.))
+	local requirement4 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s:arrow(3, googol)), 5))),0.))
+	local requirement3 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s:arrow(2, googol)), 5))),0.))
+	local requirement2 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s^googol), 5))),0.))
+	local requirement1 = math.max(math.min(1, 0.1*math.log(e_s/(r_s*1e100), 5)),0.)
+	if not G.ARGS.score_intensity.ambientDramatic then G.ARGS.score_intensity.ambientDramatic = 0 end
+	if not G.ARGS.score_intensity.ambientSinister then G.ARGS.score_intensity.ambientSinister = 0 end
+	if not G.ARGS.score_intensity.ambientSurreal3 then G.ARGS.score_intensity.ambientSurreal3 = 0 end
+	if not G.ARGS.score_intensity.ambientSurreal2 then G.ARGS.score_intensity.ambientSurreal2 = 0 end
+	if not G.ARGS.score_intensity.ambientSurreal1 then G.ARGS.score_intensity.ambientSurreal1 = 0 end
+	G.ARGS.score_intensity.ambientDramatic = notzero and requirement5:to_number() or 0
+	G.ARGS.score_intensity.ambientSinister = ((G.ARGS.score_intensity.ambientDramatic or 0) <= 0.05 and notzero) and requirement4:to_number() or 0
+	if Jen and type(Jen) == 'table' then
+		Jen.dramatic = G.ARGS.score_intensity.ambientDramatic > 0
+		Jen.sinister = G.ARGS.score_intensity.ambientSinister > 0 or Jen.dramatic
+	end
+	G.ARGS.score_intensity.ambientSurreal3 = (not Jen.dramatic and not Jen.sinister) and requirement3:to_number() or 0
+	G.ARGS.score_intensity.ambientSurreal2 = ((not Jen.dramatic and not Jen.sinister) and (G.ARGS.score_intensity.ambientSurreal3 or 0) <= 0.05 and notzero) and requirement2:to_number() or 0
+	G.ARGS.score_intensity.ambientSurreal1 = ((not Jen.dramatic and not Jen.sinister) and (G.ARGS.score_intensity.ambientSurreal3 or 0) <= 0.05 and (G.ARGS.score_intensity.ambientSurreal2 or 0) <= 0.05 and notzero) and requirement1 or 0
+	G.ARGS.score_intensity.organ = (G.video_organ or ((G.ARGS.score_intensity.ambientSurreal3 or 0) <= 0.05 and (G.ARGS.score_intensity.ambientSurreal2 or 0) <= 0.05 and (G.ARGS.score_intensity.ambientSurreal1 or 0) <= 0.05 and notzero)) and math.max(math.min(1, 0.1*math.log(G.ARGS.score_intensity.earned_score/(G.ARGS.score_intensity.required_score+1), 5)),0.) or 0
+	notzero = nil
+	e_s = nil
+	r_s = nil
+	googol = nil
+	requirement5 = nil
+	requirement4 = nil
+	requirement3 = nil
+	requirement2 = nil
+	requirement1 = nil
+else
+	G.ARGS.score_intensity.organ = G.video_organ or G.ARGS.score_intensity.required_score > 0 and math.max(math.min(0.4, 0.1*math.log(G.ARGS.score_intensity.earned_score/(G.ARGS.score_intensity.required_score+1), 5)),0.) or 0
+end
+'''
+match_indent = true
+
+## cartomancer compatibility
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "G.ARGS.score_intensity.organ = G.video_organ or to_big(G.ARGS.score_intensity.required_score) > to_big(0) and math.max(math.min(0.4, 0.1*math.log(G.ARGS.score_intensity.earned_score/(G.ARGS.score_intensity.required_score+1), 5)),0.) or 0"
+position = "at"
+payload = '''
+if Big.arrow and G.GAME.blind and to_big(G.GAME.blind.chips or 0) > to_big(0) then
+	local notzero = to_big(G.ARGS.score_intensity.required_score) > to_big(0)
+	local e_s = to_big(G.ARGS.score_intensity.earned_score)
+	local r_s = to_big(G.ARGS.score_intensity.required_score+1)
+	local googol = to_big(1e100)
+	local requirement5 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s:arrow(8, googol)), 5))),0.))
+	local requirement4 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s:arrow(3, googol)), 5))),0.))
+	local requirement3 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s:arrow(2, googol)), 5))),0.))
+	local requirement2 = to_big(math.max(math.min(1, 0.1*(math.log(e_s/(r_s^googol), 5))),0.))
+	local requirement1 = math.max(math.min(1, 0.1*math.log(e_s/(r_s*1e100), 5)),0.)
+	if not G.ARGS.score_intensity.ambientDramatic then G.ARGS.score_intensity.ambientDramatic = 0 end
+	if not G.ARGS.score_intensity.ambientSinister then G.ARGS.score_intensity.ambientSinister = 0 end
+	if not G.ARGS.score_intensity.ambientSurreal3 then G.ARGS.score_intensity.ambientSurreal3 = 0 end
+	if not G.ARGS.score_intensity.ambientSurreal2 then G.ARGS.score_intensity.ambientSurreal2 = 0 end
+	if not G.ARGS.score_intensity.ambientSurreal1 then G.ARGS.score_intensity.ambientSurreal1 = 0 end
+	G.ARGS.score_intensity.ambientDramatic = notzero and requirement5:to_number() or 0
+	G.ARGS.score_intensity.ambientSinister = ((G.ARGS.score_intensity.ambientDramatic or 0) <= 0.05 and notzero) and requirement4:to_number() or 0
+	if Jen and type(Jen) == 'table' then
+		Jen.dramatic = G.ARGS.score_intensity.ambientDramatic > 0
+		Jen.sinister = G.ARGS.score_intensity.ambientSinister > 0 or Jen.dramatic
+	end
+	G.ARGS.score_intensity.ambientSurreal3 = (not Jen.dramatic and not Jen.sinister) and requirement3:to_number() or 0
+	G.ARGS.score_intensity.ambientSurreal2 = ((not Jen.dramatic and not Jen.sinister) and (G.ARGS.score_intensity.ambientSurreal3 or 0) <= 0.05 and notzero) and requirement2:to_number() or 0
+	G.ARGS.score_intensity.ambientSurreal1 = ((not Jen.dramatic and not Jen.sinister) and (G.ARGS.score_intensity.ambientSurreal3 or 0) <= 0.05 and (G.ARGS.score_intensity.ambientSurreal2 or 0) <= 0.05 and notzero) and requirement1 or 0
+	G.ARGS.score_intensity.organ = (G.video_organ or ((G.ARGS.score_intensity.ambientSurreal3 or 0) <= 0.05 and (G.ARGS.score_intensity.ambientSurreal2 or 0) <= 0.05 and (G.ARGS.score_intensity.ambientSurreal1 or 0) <= 0.05 and notzero)) and math.max(math.min(1, 0.1*math.log(G.ARGS.score_intensity.earned_score/(G.ARGS.score_intensity.required_score+1), 5)),0.) or 0
+	notzero = nil
+	e_s = nil
+	r_s = nil
+	googol = nil
+	requirement5 = nil
+	requirement4 = nil
+	requirement3 = nil
+	requirement2 = nil
+	requirement1 = nil
+else
+	G.ARGS.score_intensity.organ = G.video_organ or G.ARGS.score_intensity.required_score > 0 and math.max(math.min(0.4, 0.1*math.log(G.ARGS.score_intensity.earned_score/(G.ARGS.score_intensity.required_score+1), 5)),0.) or 0
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "ambientOrgan1 = {volfunc = function(_prev_volume) return _prev_volume*(1 - dt) + dt*0.6*(G.SETTINGS.SOUND.music_volume + 100)/200*(G.ARGS.score_intensity.organ) end},"
+position = "after"
+payload = '''
+	jen_ambientSurreal1 = {volfunc = function(_prev_volume) return _prev_volume*(1 - dt) + dt*0.6*(G.SETTINGS.SOUND.music_volume + 100)/200*((G.ARGS.score_intensity.ambientSurreal1 or 0) * 1.8) end},
+	jen_ambientSurreal2 = {volfunc = function(_prev_volume) return _prev_volume*(1 - dt) + dt*0.6*(G.SETTINGS.SOUND.music_volume + 110)/200*((G.ARGS.score_intensity.ambientSurreal2 or 0) * 2) end},
+	jen_ambientSurreal3 = {volfunc = function(_prev_volume) return _prev_volume*(1 - dt) + dt*0.6*(G.SETTINGS.SOUND.music_volume + 120)/200*((G.ARGS.score_intensity.ambientSurreal3 or 0) * 2.2) end},
+	jen_ambientSinister = {volfunc = function(_prev_volume) return _prev_volume*(1 - dt) + dt*0.6*(G.SETTINGS.SOUND.music_volume + 135)/200*((G.ARGS.score_intensity.ambientSinister or 0) * 2.4) end},
+	jen_ambientDramatic = {volfunc = function(_prev_volume) return _prev_volume*(1 - dt) + dt*0.6*(G.SETTINGS.SOUND.music_volume + 135)/200*((G.ARGS.score_intensity.ambientDramatic or 0) * 2.6) end},
+'''
+match_indent = true
+
+## this should safely fail if betmma vouchers is installed
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''{n=G.UIT.T, config={text = string.rep(localize("$"), blind_choice.config.dollars)..'+', scale = 0.35, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.MONEY, shadow = not disabled}}'''
+position = "at"
+payload = '''
+    {n=G.UIT.T, config={text = (blind_choice.config.dollars > 8 and (localize("$") .. number_format(blind_choice.config.dollars) .. '+') or (string.rep(localize("$"), blind_choice.config.dollars)..'+')), scale = 0.35, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.MONEY, shadow = not disabled}}
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+pattern = '''G.GAME.current_round.dollars_to_be_earned = self.dollars > 0 and (string.rep(localize('$'), self.dollars)..'') or ('')'''
+position = "at"
+payload = '''
+    G.GAME.current_round.dollars_to_be_earned = self.dollars > 8 and (localize('$') .. number_format(self.dollars)) or (self.dollars > 0 and (string.rep(localize('$'), self.dollars)) or '')
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''if card.area and card.area.config.type == 'joker' then'''
+position = 'before'
+payload = '''if card.area and (card.area == G.consumeables) and card.gc and (card:gc().set == 'Booster' or card:gc().set == 'Voucher') then
+	local use, sell
+    use = 
+    {n=G.UIT.C, config={align = "tr"}, nodes={
+      {n=G.UIT.C, config={ref_table = card, align = "cr",maxw = 1.25, padding = 0.1, r=0.08, minw = 1.25, minh = 1, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = card:gc().set == 'Voucher' and 'jen_redeemvoucher' or 'jen_openpack', func = card:gc().set == 'Voucher' and 'jen_canredeemvoucher' or 'jen_canopenpack'}, nodes={
+        {n=G.UIT.B, config = {w=0.1,h=0.6}},
+        {n=G.UIT.T, config={text = card:gc().set == 'Voucher' and localize('b_redeem') or localize('b_open'),colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
+      }}
+    }}
+	sell = {n=G.UIT.C, config={align = "br"}, nodes={
+		{n=G.UIT.C, config={ref_table = card, align = "cr",padding = 0.1, r=0.08, minw = 1.25, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'sell_card', func = 'can_sell_card'}, nodes={
+			{n=G.UIT.B, config = {w=0.1,h=0.6}},
+			{n=G.UIT.C, config={align = "tm"}, nodes={
+				{n=G.UIT.R, config={align = "cm", maxw = 1.25}, nodes={
+				{n=G.UIT.T, config={text = localize('b_sell'),colour = G.C.UI.TEXT_LIGHT, scale = 0.4, shadow = true}}
+				}},
+				{n=G.UIT.R, config={align = "cm"}, nodes={
+					{n=G.UIT.T, config={text = localize('$'),colour = G.C.WHITE, scale = 0.4, shadow = true}},
+					{n=G.UIT.T, config={ref_table = card, ref_value = 'sell_cost_label',colour = G.C.WHITE, scale = 0.55, shadow = true}}
+				}}
+			}}
+		}},
+	}}
+    local t = {
+      n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+        {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+          {n=G.UIT.R, config={align = 'cl'}, nodes={
+            use,
+			sell
+          }},
+        }},
+    }}
+    return t
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "nominal_chips = self.base.nominal > 0 and self.base.nominal or nil,"
+position = "after"
+payload = '''
+suitstats = G.GAME.suits[self.base.suit],
+rankstats = G.GAME.ranks[self.base.value],
+'''
+match_indent = true
+overwrite = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif _c.set == 'Enhanced' then"
+position = "before"
+payload = '''
+if specific_vars.suitstats and specific_vars.suitstats.level > 1 then
+	localize{type = 'other', key = 'card_suitstats', nodes = desc_nodes, vars = {specific_vars.suitstats.level, specific_vars.suitstats.chips, specific_vars.suitstats.mult, card and localize(card.base.suit, "suits_plural"), colours = {
+			(specific_vars.suitstats.level <= 7200 and G.C.HAND_LEVELS['!' .. (G.GAME.suits[card and card.base.suit or ''].level or 1)] or G.C.HAND_LEVELS[G.GAME.suits[card and card.base.suit or ''].level or 1] or G.C.UI.TEXT_DARK),
+			G.C.SUITS[card and card.base.suit],
+		}}}
+end
+if specific_vars.rankstats and specific_vars.rankstats.level > 1 then
+	localize{type = 'other', key = 'card_rankstats', nodes = desc_nodes, vars = {specific_vars.rankstats.level, specific_vars.rankstats.chips, specific_vars.rankstats.mult, card and card.base.value, colours = {
+			(specific_vars.rankstats.level <= 7200 and G.C.HAND_LEVELS['!' .. (G.GAME.ranks[card and card.base.value or ''].level or 1)] or G.C.HAND_LEVELS[G.GAME.ranks[card and card.base.value or ''].level or 1] or G.C.UI.TEXT_DARK),
+			G.C.FILTER,
+		}}}
+end
+'''
+match_indent = true
+overwrite = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif _c.set == 'Booster' then"
+position = "before"
+payload = '''
+if card and card.ability.effect ~= 'Stone Card' and (not card.config.center.no_suit) and (specific_vars and specific_vars.suitstats and specific_vars.suitstats.level > 1) then
+	localize{type = 'other', key = 'card_suitstats', nodes = desc_nodes, vars = {specific_vars.suitstats.level, specific_vars.suitstats.chips, specific_vars.suitstats.mult, card and localize(card.base.suit, "suits_plural"), colours = {
+			(specific_vars.suitstats.level<=7200 and G.C.HAND_LEVELS['!' .. (G.GAME.suits[card and card.base.suit or ''].level or 1)] or G.C.HAND_LEVELS[G.GAME.suits[card and card.base.suit or ''].level or 1] or G.C.UI.TEXT_DARK),
+			G.C.SUITS[card and card.base.suit],
+		}}}
+end
+if card and card.ability.effect ~= 'Stone Card' and (not card.config.center.no_rank) and (specific_vars and specific_vars.rankstats and specific_vars.rankstats.level > 1) then
+	localize{type = 'other', key = 'card_rankstats', nodes = desc_nodes, vars = {specific_vars.rankstats.level, specific_vars.rankstats.chips, specific_vars.rankstats.mult, card and card.base.value, colours = {
+			(specific_vars.rankstats.level<=7200 and G.C.HAND_LEVELS['!' .. (G.GAME.ranks[card and card.base.value or ''].level or 1)] or G.C.HAND_LEVELS[G.GAME.ranks[card and card.base.value or ''].level or 1] or G.C.UI.TEXT_DARK),
+			G.C.FILTER,
+		}}}
+end
+'''
+match_indent = true
+overwrite = false
+
+# G.UIDEF.run_info
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "tab_definition_function = create_UIBox_current_hands,"
+position = "after"
+payload = '''
+},{
+	label = localize('b_suits'),
+	tab_definition_function = ui_suits,
+},{
+	label = localize('b_ranks'),
+	tab_definition_function = ui_ranks,
+
+'''
+match_indent = true
+overwrite = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+        local chips = card:get_chip_bonus()
+        if chips > 0 then 
+            ret.chips = chips
+        end
+
+        local mult = card:get_chip_mult()
+        if mult > 0 then 
+            ret.mult = mult
+        end
+'''
+position = "at"
+payload = '''
+        local chips = card:get_chip_bonus()
+        if to_big(chips) > to_big(0) then 
+            ret.chips = chips
+        end
+
+        local mult = card:get_chip_mult()
+        if to_big(mult) > to_big(0) then 
+            ret.mult = mult
+        end
+'''
+match_indent = true
+overwrite = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if v.name == 'Black Hole' or v.name == 'The Soul' or v.hidden then"
+position = "at"
+payload = "if Jen.hiddencard(v) then"
+match_indent = true
+overwrite = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "G.GAME.round_resets.ante = Big and (to_number(math.floor(to_big(G.GAME.round_resets.ante)))) or math.floor(G.GAME.round_resets.ante)"
+position = "at"
+payload = "G.GAME.round_resets.ante = Big and (to_number(to_big(G.GAME.round_resets.ante))) or G.GAME.round_resets.ante"
+match_indent = true
+overwrite = false
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+          {n=G.UIT.R, config={id = 'run_info_button', align = "cm", minh = 1.75, minw = 1.5,padding = 0.05, r = 0.1, hover = true, colour = G.C.RED, button = "run_info", shadow = true}, nodes={
+            {n=G.UIT.R, config={align = "cm", padding = 0, maxw = 1.4}, nodes={
+              {n=G.UIT.T, config={text = localize('b_run_info_1'), scale = 1.2*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
+            }},
+            {n=G.UIT.R, config={align = "cm", padding = 0, maxw = 1.4}, nodes={
+              {n=G.UIT.T, config={text = localize('b_run_info_2'), scale = 1*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true, focus_args = {button = G.F_GUIDE and 'guide' or 'back', orientation = 'bm'}, func = 'set_button_pip'}}
+            }}
+          }},
+'''
+position = 'at'
+payload = '''
+          {n=G.UIT.R, config={id = 'run_info_button', align = "cm", minh = 1, minw = 1.5,padding = 0.05, r = 0.1, hover = true, colour = G.C.RED, button = "run_info", shadow = true}, nodes={
+            {n=G.UIT.R, config={align = "cm", padding = 0, maxw = 1.4}, nodes={
+              {n=G.UIT.T, config={text = localize('b_run_info_1'), scale = .7*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
+            }},
+            {n=G.UIT.R, config={align = "cm", padding = 0, maxw = 1.4}, nodes={
+              {n=G.UIT.T, config={text = localize('b_run_info_2'), scale = .6*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true, focus_args = {button = G.F_GUIDE and 'guide' or 'back', orientation = 'bm'}, func = 'set_button_pip'}}
+            }}
+          }},
+'''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''{n=G.UIT.R, config={align = "cm", id = 'row_round'}, nodes={
+            {n=G.UIT.C, config={align = "cm"}, nodes=contents.buttons},
+            {n=G.UIT.C, config={align = "cm"}, nodes=contents.round}
+          }},'''
+position = 'at'
+payload = '''
+		  {n=G.UIT.R, config={align = "cm", id = 'row_round'}, nodes={
+            {n=G.UIT.C, config={align = "cm"}, nodes=contents.round}
+          }},
+'''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''contents.hand =
+        {n=G.UIT.R, config={align = "cm", id = 'hand_text_area', colour = darken(G.C.BLACK, 0.1), r = 0.1, emboss = 0.05, padding = 0.03}, nodes={
+            {n=G.UIT.C, config={align = "cm"}, nodes={
+              {n=G.UIT.R, config={align = "cm", minh = 1.1}, nodes={
+                {n=G.UIT.O, config={id = 'hand_name', func = 'hand_text_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "handname_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+                {n=G.UIT.O, config={id = 'cry_asc', func = 'cry_asc_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "cry_asc_num_text"}}, colours = {G.C.GOLD}, shadow = true, float = true, scale = scale*1})}},
+                {n=G.UIT.O, config={id = 'hand_chip_total', func = 'hand_chip_total_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_total_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+                {n=G.UIT.T, config={ref_table = G.GAME.current_round.current_hand, ref_value='hand_level', scale = scale, colour = G.C.UI.TEXT_LIGHT, id = 'hand_level', shadow = true}}
+              }},
+              {n=G.UIT.R, config={align = "cm", minh = 1, padding = 0.1}, nodes={
+                {n=G.UIT.C, config={align = "cr", minw = 2, minh =1, r = 0.1,colour = G.C.UI_CHIPS, id = 'hand_chip_area', emboss = 0.05}, nodes={
+                    {n=G.UIT.O, config={func = 'flame_handler',no_role = true, id = 'flame_chips', object = Moveable(0,0,0,0), w = 0, h = 0}},
+                    {n=G.UIT.O, config={id = 'hand_chips', func = 'hand_chip_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_text"}}, colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*2.3})}},
+                    {n=G.UIT.B, config={w=0.1,h=0.1}},
+                }},
+                {n=G.UIT.C, config={align = "cm"}, nodes={
+                  {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
+                }},
+                {n=G.UIT.C, config={align = "cl", minw = 2, minh=1, r = 0.1,colour = G.C.UI_MULT, id = 'hand_mult_area', emboss = 0.05}, nodes={
+                  {n=G.UIT.O, config={func = 'flame_handler',no_role = true, id = 'flame_mult', object = Moveable(0,0,0,0), w = 0, h = 0}},
+                  {n=G.UIT.B, config={w=0.1,h=0.1}},
+                  {n=G.UIT.O, config={id = 'hand_mult', func = 'hand_mult_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "mult_text"}}, colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*2.3})}},
+                }}
+              }}
+            }}
+          }}'''
+position = "at"
+payload = '''contents.hand =
+        {n=G.UIT.R, config={align = "cm", id = 'hand_text_area', colour = darken(G.C.BLACK, 0.1), r = 0.1, emboss = 0.05, padding = 0.03}, nodes={
+            {n=G.UIT.C, config={align = "cm"}, nodes={
+              {n=G.UIT.R, config={align = "cm", minh = 1.1}, nodes={
+                {n=G.UIT.O, config={id = 'hand_name', func = 'hand_text_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "handname_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+                {n=G.UIT.O, config={id = 'cry_asc', func = 'cry_asc_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "cry_asc_num_text"}}, colours = {G.C.GOLD}, shadow = true, float = true, scale = scale*1})}},
+                {n=G.UIT.O, config={id = 'hand_chip_total', func = 'hand_chip_total_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_total_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+                {n=G.UIT.T, config={ref_table = G.GAME.current_round.current_hand, ref_value='hand_level', scale = scale, colour = G.C.UI.TEXT_LIGHT, id = 'hand_level', shadow = true}}
+              }},
+              {n=G.UIT.R, config={align = "cm", minh = .5, padding = 0.1}, nodes={
+                {n=G.UIT.C, config={align = "cr", minw = 2, minh = .5, r = 0.1,colour = G.C.UI_CHIPS, id = 'hand_chip_area', emboss = 0.05}, nodes={
+                    {n=G.UIT.O, config={func = 'flame_handler',no_role = true, id = 'flame_chips', object = Moveable(0,0,0,0), w = 0, h = 0}},
+                    {n=G.UIT.O, config={id = 'hand_chips', func = 'hand_chip_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_text"}}, colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*1.15})}},
+                    {n=G.UIT.B, config={w=0.1,h=0.1}},
+                }},
+                {n=G.UIT.C, config={align = "cm"}, nodes={
+                  {n=G.UIT.T, config={id = "chipmult_op", text = "X", lang = G.LANGUAGES["en-us"], scale = scale, colour = G.C.UI_MULT, shadow = true}},
+                }},
+                {n=G.UIT.C, config={align = "cl", minw = 2, minh= .5, r = 0.1,colour = G.C.UI_MULT, id = 'hand_mult_area', emboss = 0.05}, nodes={
+                  {n=G.UIT.O, config={func = 'flame_handler',no_role = true, id = 'flame_mult', object = Moveable(0,0,0,0), w = 0, h = 0}},
+                  {n=G.UIT.B, config={w=0.1,h=0.1}},
+                  {n=G.UIT.O, config={id = 'hand_mult', func = 'hand_mult_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "mult_text"}}, colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*1.15})}},
+                }}
+              }}
+            }}
+          }}'''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+            contents.round = {
+              {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.C, config={id = 'hud_hands',align = "cm", padding = 0.05, minw = 1.45, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                  {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                    {n=G.UIT.T, config={text = localize('k_hud_hands'), scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                  }},
+                  {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                    {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.current_round, ref_value = 'hands_left'}}, font = G.LANGUAGES['en-us'].font, colours = {G.C.BLUE},shadow = true, rotate = true, scale = 2*scale}),id = 'hand_UI_count'}},
+                  }}
+                }},
+                {n=G.UIT.C, config={minw = spacing},nodes={}},
+                {n=G.UIT.C, config={align = "cm", padding = 0.05, minw = 1.45, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                  {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                    {n=G.UIT.T, config={text = localize('k_hud_discards'), scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                  }},
+                  {n=G.UIT.R, config={align = "cm"}, nodes={
+                    {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                      {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.current_round, ref_value = 'discards_left'}}, font = G.LANGUAGES['en-us'].font, colours = {G.C.RED},shadow = true, rotate = true, scale = 2*scale}),id = 'discard_UI_count'}},
+                    }}
+                  }},
+                }},
+              }},
+              {n=G.UIT.R, config={minh = spacing},nodes={}},
+              {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.C, config={align = "cm", padding = 0.05, minw = 1.45*2 + spacing, minh = 1.15, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                  {n=G.UIT.R, config={align = "cm"}, nodes={
+                    {n=G.UIT.C, config={align = "cm", r = 0.1, minw = 1.28*2+spacing, minh = 1, colour = temp_col2}, nodes={
+                      {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'dollars', prefix = localize('$')}},
+                            scale_function = function ()
+                                return scale_number(G.GAME.dollars, 2.2 * scale, 99999, 1000000)
+                            end, maxw = 1.35, colours = {G.C.MONEY}, font = G.LANGUAGES['en-us'].font, shadow = true,spacing = 2, bump = true, scale = 2.2*scale}), id = 'dollar_text_UI'}}
+                  }},
+                  }},
+                }},
+            }},
+            {n=G.UIT.R, config={minh = spacing},nodes={}},
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+              {n=G.UIT.C, config={id = 'hud_ante',align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = localize('k_ante'), scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.round_resets, ref_value = 'ante_disp'}}, colours = {G.C.IMPORTANT},shadow = true, font = G.LANGUAGES['en-us'].font, scale = scale_number(G.GAME.round_resets.ante, 2*scale, 100)}),id = 'ante_UI_count'}},--{n=G.UIT.T, config={text = number_format(G.GAME.round_resets.ante), lang = G.LANGUAGES['en-us'], scale = scale_number(G.GAME.round_resets.ante, 2*scale, 100), colour = G.C.IMPORTANT, shadow = true,id = 'ante_UI_count'}},
+                  {n=G.UIT.T, config={text = " ", scale = 0.3*scale}},
+                  {n=G.UIT.T, config={text = "/ ", scale = 0.7*scale, colour = G.C.WHITE, shadow = true}},
+                  {n=G.UIT.T, config={ref_table = G.GAME, ref_value='win_ante', scale = scale, colour = G.C.WHITE, shadow = true}}
+                }},
+              }},
+              {n=G.UIT.C, config={minw = spacing},nodes={}},
+              {n=G.UIT.C, config={align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = localize('k_round'), minh = 0.33, scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2, id = 'row_round_text'}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'round'}}, colours = {G.C.IMPORTANT},shadow = true, scale = 2*scale}),id = 'round_UI_count'}},
+                }},
+              }},
+            }},            
+    }'''
+position = 'at'
+payload = '''
+            contents.round = {
+              {n=G.UIT.R, config={align = "cm"}, nodes={
+				{n=G.UIT.C, config={id = 'run_info_button', align = "cm", minh = 1, minw = 1.45,padding = 0.05, r = 0.1, hover = true, colour = G.C.RED, button = "run_info", shadow = true}, nodes={
+					{n=G.UIT.R, config={align = "cm", padding = 0, maxw = 1.4}, nodes={
+					  {n=G.UIT.T, config={text = localize('b_run_info_1'), scale = .7*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
+					}},
+					{n=G.UIT.R, config={align = "cm", padding = 0, maxw = 1.4}, nodes={
+					  {n=G.UIT.T, config={text = localize('b_run_info_2'), scale = .6*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true, focus_args = {button = G.F_GUIDE and 'guide' or 'back', orientation = 'bm'}, func = 'set_button_pip'}}
+					}}
+				}},
+                {n=G.UIT.C, config={minw = spacing},nodes={}},
+                {n=G.UIT.C, config={id = 'hud_hands',align = "cm", padding = 0.05, minw = 1.45, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                  {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                    {n=G.UIT.T, config={text = localize('k_hud_hands'), scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                  }},
+                  {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                    {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.current_round, ref_value = 'hands_left'}}, font = G.LANGUAGES['en-us'].font, colours = {G.C.BLUE},shadow = true, rotate = true, scale = 2*scale}),id = 'hand_UI_count'}},
+                  }}
+                }},
+                {n=G.UIT.C, config={minw = spacing},nodes={}},
+                {n=G.UIT.C, config={align = "cm", padding = 0.05, minw = 1.45, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                  {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                    {n=G.UIT.T, config={text = localize('k_hud_discards'), scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                  }},
+                  {n=G.UIT.R, config={align = "cm"}, nodes={
+                    {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                      {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.current_round, ref_value = 'discards_left'}}, font = G.LANGUAGES['en-us'].font, colours = {G.C.RED},shadow = true, rotate = true, scale = 2*scale}),id = 'discard_UI_count'}},
+                    }}
+                  }},
+                }},
+              }},
+              {n=G.UIT.R, config={minh = spacing},nodes={}},
+              {n=G.UIT.R, config={align = "cm"}, nodes={
+				  {n=G.UIT.C, config={align = "cm", minh = 1, minw = 1.45,padding = 0.05, r = 0.1, hover = true, colour = G.C.ORANGE, button = "options", shadow = true}, nodes={
+					{n=G.UIT.C, config={align = "cm", maxw = 1.4, focus_args = {button = 'start', orientation = 'bm'}, func = 'set_button_pip'}, nodes={
+					  {n=G.UIT.T, config={text = localize('b_options'), scale = .8*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
+					}},
+				  }},
+                {n=G.UIT.C, config={minw = spacing},nodes={}},
+                {n=G.UIT.C, config={align = "cm", padding = 0.05, minw = 1.45*2 + spacing, minh = 1.15, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                  {n=G.UIT.R, config={align = "cm"}, nodes={
+                    {n=G.UIT.C, config={align = "cm", r = 0.1, minw = 1.28*2+spacing, minh = 1, colour = temp_col2}, nodes={
+                      {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'dollars', prefix = localize('$')}},
+                            scale_function = function ()
+                                return scale_number(G.GAME.dollars, 2.2 * scale, 99999, 1000000)
+                            end, maxw = 1.35, colours = {G.C.MONEY}, font = G.LANGUAGES['en-us'].font, shadow = true,spacing = 2, bump = true, scale = 2.2*scale}), id = 'dollar_text_UI'}}
+                  }},
+                  }},
+                }},
+            }},
+            {n=G.UIT.R, config={minh = spacing},nodes={}},
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+              {n=G.UIT.C, config={id = 'hud_straddle',align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = 'Straddle', scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'straddle_disp'}}, colours = {G.C.DARK_EDITION},shadow = true, font = G.LANGUAGES['en-us'].font, scale = scale_number(G.GAME.straddle_disp, 2*scale, 100)}),id = 'straddle_UI_count'}},
+                }},
+              }},
+              {n=G.UIT.C, config={minw = spacing},nodes={}},
+              {n=G.UIT.C, config={id = 'hud_ante',align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = localize('k_ante'), scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.round_resets, ref_value = 'ante_disp'}}, colours = {G.C.IMPORTANT},shadow = true, font = G.LANGUAGES['en-us'].font, scale = scale_number(G.GAME.round_resets.ante, 2*scale, 100)}),id = 'ante_UI_count'}},--{n=G.UIT.T, config={text = number_format(G.GAME.round_resets.ante), lang = G.LANGUAGES['en-us'], scale = scale_number(G.GAME.round_resets.ante, 2*scale, 100), colour = G.C.IMPORTANT, shadow = true,id = 'ante_UI_count'}},
+                  {n=G.UIT.T, config={text = " ", scale = 0.3*scale}},
+                  {n=G.UIT.T, config={text = "/ ", scale = 0.7*scale, colour = G.C.WHITE, shadow = true}},
+                  {n=G.UIT.T, config={ref_table = G.GAME, ref_value='win_ante', scale = scale, colour = G.C.WHITE, shadow = true}}
+                }},
+              }},
+              {n=G.UIT.C, config={minw = spacing},nodes={}},
+              {n=G.UIT.C, config={align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = localize('k_round'), minh = 0.33, scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2, id = 'row_round_text'}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'round'}}, colours = {G.C.IMPORTANT},shadow = true, scale = 2*scale}),id = 'round_UI_count'}},
+                }},
+              }},
+            }},            
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+              {n=G.UIT.C, config={id = 'hud_tension',align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = 'Tension', scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'tension'}}, colours = {G.C.CRY_EMBER},shadow = true, font = G.LANGUAGES['en-us'].font, scale = scale_number(G.GAME.tension, 2*scale, 100)}),id = 'tension_UI_count'}},
+                }},
+              }},
+              {n=G.UIT.C, config={minw = spacing},nodes={}},
+              {n=G.UIT.C, config={id = 'hud_relief',align = "cm", padding = 0.05, minw = 1.45, minh = 1, colour = temp_col, emboss = 0.05, r = 0.1}, nodes={
+                {n=G.UIT.R, config={align = "cm", minh = 0.33, maxw = 1.35}, nodes={
+                  {n=G.UIT.T, config={text = 'Relief', scale = 0.85*scale, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+                }},
+                {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 1.2, colour = temp_col2}, nodes={
+                  {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME, ref_value = 'relief'}}, colours = {G.C.CRY_VERDANT},shadow = true, font = G.LANGUAGES['en-us'].font, scale = scale_number(G.GAME.relief, 2*scale, 100)}),id = 'relief_UI_count'}},
+                }},
+              }},
+            }},            
+    }'''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = 'e.config.object = Sprite(0, 0, 2.5, 2.5, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})'
+position = 'at'
+payload = 'e.config.object = Sprite(0, 0, 2.5, 1.25, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})'
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "if type(vals.chips) == 'string' then delta = vals.chips end"
+position = 'before'
+payload = '''if vals.notifcol then
+	col = vals.notifcol
+else
+	if string.find(delta, '{', 1, true) and string.find(delta, '}', 1, true) then
+		col = G.C.jen_RGB
+	elseif string.find(delta, '^^^', 1, true) then
+		col = G.C.CRY_ASCENDANT
+	elseif string.find(delta, '^^', 1, true) then
+		col = G.C.CRY_VERDANT
+	elseif string.find(delta, '^', 1, true) then
+		col = G.C.SECONDARY_SET.Tarot
+	elseif string.find(delta, 'X', 1, true) or string.find(delta, 'x', 1, true) then
+		col = G.C.FILTER
+	elseif string.find(delta, '=', 1, true) then
+		col = G.C.GOLD
+	end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "if type(vals.mult) == 'string' then delta = vals.mult end"
+position = 'before'
+payload = '''if vals.notifcol then
+	col = vals.notifcol
+else
+	if string.find(delta, '{', 1, true) and string.find(delta, '}', 1, true) then
+		col = G.C.jen_RGB
+	elseif string.find(delta, '^^^', 1, true) then
+		col = G.C.CRY_ASCENDANT
+	elseif string.find(delta, '^^', 1, true) then
+		col = G.C.CRY_VERDANT
+	elseif string.find(delta, '^', 1, true) then
+		col = G.C.SECONDARY_SET.Tarot
+	elseif string.find(delta, 'X', 1, true) or string.find(delta, 'x', 1, true) then
+		col = G.C.FILTER
+	elseif string.find(delta, '=', 1, true) then
+		col = G.C.GOLD
+	end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+            if vals.StatusText then 
+                attention_text({
+                    text =delta,
+                    scale = 0.8, 
+                    hold = 1,
+                    cover = G.hand_text_area.chips.parent,
+                    cover_colour = mix_colours(G.C.CHIPS, col, 0.1),
+                    emboss = 0.05,
+                    align = 'cm',
+                    cover_align = 'cr'
+                })
+            end'''
+position = 'at'
+payload = '''
+            if vals.StatusText then 
+                attention_text({
+                    text = delta,
+                    scale = 0.4 / (math.max(1, string.len(delta) - 20) ^ .1), 
+                    hold = 1,
+                    cover = G.hand_text_area.chips.parent,
+                    cover_colour = mix_colours(G.C.CHIPS, col, 0.3),
+                    emboss = 0.05,
+                    align = 'cm',
+                    cover_align = 'cr'
+                })
+            end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+            if vals.StatusText then 
+                attention_text({
+                    text =delta,
+                    scale = 0.8, 
+                    hold = 1,
+                    cover = G.hand_text_area.mult.parent,
+                    cover_colour = mix_colours(G.C.MULT, col, 0.1),
+                    emboss = 0.05,
+                    align = 'cm',
+                    cover_align = 'cl'
+                })
+            end'''
+position = 'at'
+payload = '''
+            if vals.StatusText then 
+                attention_text({
+                    text = delta,
+                    scale = 0.4 / (math.max(1, string.len(delta) - 20) ^ .1), 
+                    hold = 1,
+                    cover = G.hand_text_area.mult.parent,
+                    cover_colour = mix_colours(G.C.MULT, col, 0.3),
+                    emboss = 0.05,
+                    align = 'cm',
+                    cover_align = 'cl'
+                })
+            end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/string_packer.lua'
+pattern = "save_string = love.data.compress('string', 'deflate', save_string, 1)"
+position = 'at'
+payload = "save_string = love.data.compress('string', 'deflate', save_string, math.max(1, math.min(((Jen or {}).config or {}).save_compression_level or 1, 9)))"
+match_indent = true

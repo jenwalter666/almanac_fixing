@@ -1,0 +1,20 @@
+{
+    "id": "jen",
+    "name": "Almanac (OT5)",
+    "author": ["jenwalter666"],
+    "description": "An extension of Cryptid which destroys what little balance there is left. Not necessarily in your favour, however.",
+    "prefix": "jen",
+    "main_file": "Jen.lua",
+    "badge_colour": "3c3cff",
+	"priority": 999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999,
+    "dependencies": [
+        "Steamodded (==1.0.0~ALPHA-1304a)",
+		"nopeus (>=2.2.5)",
+		"aurinko (>=0.4.14)",
+		"Talisman (>=2.0.2) (<<2.1.0~dev)",
+		"incantation (>=0.7.0)",
+		"JenLib (>=0.4.0)",
+		"Cryptid (==0.5.3d)"
+    ],
+    "version": "0.1.0-OT5-REV1"
+}
