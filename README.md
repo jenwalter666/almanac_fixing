@@ -1,0 +1,19 @@
+# stuff to fix
+- ~~enhancments~~
+- ~~editions~~
+- jokers
+  - godsmarble jokers
+  - base almanac jokers
+- consumables
+  - planets
+  - ~~omegas~~
+  - ~~tarots~~
+  - torats
+  - ~~uno~~
+- decks
+  - Orrery
+  - Week
+  - ~~Obsidian~~
+  - Tortoise
+  - acceleration
+- vouchers
