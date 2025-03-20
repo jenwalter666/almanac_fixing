@@ -2,18 +2,21 @@
 - ~~enhancments~~
 - ~~editions~~
 - jokers
-  - ~~godsmarble jokers~~
+  - godsmarble jokers
+    - the faceless
   - base almanac jokers
+    - crimbo
 - ~~consumables~~
   - ~~planets~~
   - ~~omegas~~
   - ~~tarots~~
   - ~~torats~~
   - ~~uno~~
-- ~~decks~~
+- decks
   - ~~Orrery~~
   - ~~Week~~
   - ~~Obsidian~~
   - ~~Tortoise~~
   - ~~acceleration~~
+  - mysterious deck
 - ~~vouchers~~
