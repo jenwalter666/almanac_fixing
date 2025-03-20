@@ -22,6 +22,8 @@ local function checkerboard_text(txt)
 	return str
 end
 
+cry_misprintize = Cryptid.misprintize
+
 local function suit_to_uno(suit)
 	suit = string.lower(suit)
 	return suit == 'hearts' and 'red' or suit == 'spades' and 'blue' or suit == 'clubs' and 'green' or suit == 'diamonds' and 'yellow' or 'n/a'
@@ -1909,7 +1911,7 @@ G.FUNCS.reroll_shop = function(e)
 		if G.GAME.relief > 0 then
 			ease_relief(-G.GAME.relief)
 		end
-		ease_tension(jl.round((3 ^ #SMODS.find_card('j_jen_aym')) / (G.GAME.current_round.reroll_cost > 0 and 4 or 1), 2))
+		ease_tension(jl.round((3 ^ #SMODS.find_card('j_jen_aym')) / (G.GAME.current_round.reroll_cost <= 0 and 4 or 1), 2)) 
 		if Jen.config.straddle.enabled and Jen.config.punish_reroll_abuse and G.GAME.tension >= 20 then
 			if not G.GAME.straddle_active then start_straddle() end
 			progress_straddle(math.ceil((2 ^ math.min(1000, G.GAME.tension - 20))))
@@ -12164,7 +12166,7 @@ SMODS.Consumable {
 		atlas = 'jenastrophage',
 		calculate = function(self, card, context)
 			if not context.cry_ease_dollars and not context.post_trigger and context.jen_lving then
-				if context.lvs > 0 then
+				if to_big(context.lvs) > to_big(0) then
 					local modifier = to_big(2) ^ context.lvs
 					G.GAME.hands[context.lv_hand].chips = to_big(G.GAME.hands[context.lv_hand].chips) ^ modifier
 					G.GAME.hands[context.lv_hand].mult = to_big(G.GAME.hands[context.lv_hand].mult) ^ modifier
@@ -12688,8 +12690,8 @@ local inhabited_quotes = {
 		calculate = function(self, card, context)
 			if not context.cry_ease_dollars and not context.post_trigger and context.jen_lving then
 				if to_big(context.lvs) > to_big(0) then
-					local iterations = math.min(1e3, context.lvs)
-					for i = 1, iterations do
+					local iterations = math.min(1e3, to_big(context.lvs))
+					for i = 1, #iterations do
 						G.GAME.hands[context.lv_hand].chips = to_big(G.GAME.hands[context.lv_hand].chips):arrow(2, 2)
 						G.GAME.hands[context.lv_hand].mult = to_big(G.GAME.hands[context.lv_hand].mult):arrow(2, 2)
 					end
@@ -12741,8 +12743,8 @@ local inhabited_quotes = {
 		calculate = function(self, card, context)
 			if not context.cry_ease_dollars and not context.post_trigger and context.jen_lving then
 				if to_big(context.lvs) > to_big(0) then
-					local iterations = math.min(1e3, context.lvs)
-					for i = 1, iterations do
+					local iterations = math.min(1e3, to_big(context.lvs))
+					for i = 1, #iterations do
 						G.GAME.hands[context.lv_hand].chips = to_big(G.GAME.hands[context.lv_hand].chips):arrow(3, 3)
 						G.GAME.hands[context.lv_hand].mult = to_big(G.GAME.hands[context.lv_hand].mult):arrow(3, 3)
 					end
@@ -21168,7 +21170,6 @@ function CardArea:emplace(card, location, stay_flipped)
 		local cen = card.gc and card:gc()
 		if cen and not cen.no_mysterious then
 			--Q(function()
-			print(cen.set)
 			if self == G.jokers then
 				Q(function()
 					if card then
