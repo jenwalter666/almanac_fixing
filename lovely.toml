@@ -566,11 +566,8 @@ pattern = "tab_definition_function = create_UIBox_current_hands,"
 position = "after"
 payload = '''
 },{
-	label = localize('b_suits'),
-	tab_definition_function = ui_suits,
-},{
-	label = localize('b_ranks'),
-	tab_definition_function = ui_ranks,
+	label = localize('b_suits').."/"..localize('b_ranks'),
+	tab_definition_function = ui_suits_ranks,
 
 '''
 match_indent = true

@@ -20742,400 +20742,267 @@ function Card:get_chip_mult()
 	return ret
 end
 
-function ui_suits(simple)
-	G.current_suits = {}
-	local index = 0
-	
-	local counts = jl.countsuit()
-	
-	for i = #SMODS.Suit.obj_buffer, 1, -1 do
+function is_valid_suit_rank(s, r)
+	return (not SMODS.Ranks[r].in_pool or SMODS.Ranks[r]:in_pool({suit = s})) and (not SMODS.Suits[s].in_pool or SMODS.Suits[s]:in_pool({rank = r}))
+end
+
+function prune_valid_suits()
+	local suits = {}
+	for i = 1, #SMODS.Suit.obj_buffer do
 		local v = SMODS.Suit.obj_buffer[i]
-		local ui_element = ui_suits_row(v, simple, counts[v])
-		G.current_suits[index + 1] = ui_element
-		if ui_element then
-			index = index + 1
+		if is_valid_suit_rank(v, G.suitrank.rank) then
+			table.insert(suits, v)
 		end
-		if index >= 10 then
+	end
+	return suits
+end
+
+function prune_valid_ranks()
+	local ranks = {}
+	for i = 1, #SMODS.Rank.obj_buffer do
+		local v = SMODS.Rank.obj_buffer[i]
+		if is_valid_suit_rank(G.suitrank.suit, v) then
+			table.insert(ranks, v)
+		end
+	end
+	return ranks
+end
+
+function G.FUNCS.inc_sr_suit()
+	local suits = prune_valid_suits()
+	-- Find current suit position
+	local pos = 0
+	for i = 1, #suits do
+		if suits[i] == G.suitrank.suit then
+			pos = i
 			break
 		end
 	end
+	G.suitrank.suit = suits[(pos % #suits) + 1]
+	recalc_suitrank()
+end
 
-	local visible_suits = {}
-	for i = #SMODS.Suit.obj_buffer, 1, -1 do
-		local v = SMODS.Suit.obj_buffer[i]
-		if (counts[v] and counts[v] > 0) or (G.GAME.suits[suit] and G.GAME.suits[suit].level > 1) or (v == "Spades" or v == "Hearts" or v == "Clubs" or v == "Diamonds") then
-			table.insert(visible_suits, v)
+function G.FUNCS.dec_sr_suit()
+	local suits = prune_valid_suits()
+	-- Find current suit position
+	local pos = 0
+	for i = 1, #suits do
+		if suits[i] == G.suitrank.suit then
+			pos = i
+			break
 		end
 	end
+	G.suitrank.suit = suits[(pos - 2) % #suits + 1]
+	recalc_suitrank()
+end
 
-	local suit_options = {}
-	for i = 1, math.ceil(#visible_suits / 10) do
-		table.insert(suit_options, localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_suits / 10)))
+function G.FUNCS.inc_sr_rank()
+	local ranks = prune_valid_ranks()
+	-- Find current rank position
+	local pos = 0
+	for i = 1, #ranks do
+		if ranks[i] == G.suitrank.rank then
+			pos = i
+			break
+		end
 	end
+	G.suitrank.rank = ranks[(pos % #ranks) + 1]
+	recalc_suitrank()
+end
 
-	local obj = {
-		n = G.UIT.ROOT,
-		config = { align = "cm", colour = G.C.CLEAR },
-		nodes = {
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0.04 },
-				nodes = G.current_suits
-			},
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0 },
-				nodes = {
-					create_option_cycle({
-						options = suit_options,
-						w = 4.5,
-						cycle_shoulders = true,
-						opt_callback = 'suit_list',
-						focus_args = { snap_to = true, nav = 'wide' },
-						current_option = 1,
-						colour = G.C.RED,
-						no_pips = true
-					})
-				}
-			}
-		}
-	}
+function G.FUNCS.dec_sr_rank()
+	local ranks = prune_valid_ranks()
+	-- Find current rank position
+	local pos = 0
+	for i = 1, #ranks do
+		if ranks[i] == G.suitrank.rank then
+			pos = i
+			break
+		end
+	end
+	G.suitrank.rank = ranks[(pos - 2) % #ranks + 1]
+	recalc_suitrank()
+end
 
-	local t = {
+function recalc_suitrank()
+	SMODS.change_base(G.suitrank.area.cards[1], G.suitrank.suit, G.suitrank.rank)
+	G.suitrank.suitconfig.name = localize(G.suitrank.suit, 'suits_plural')
+	G.suitrank.rankconfig.name = localize(G.suitrank.rank, 'ranks')
+	for _, k in pairs({"color", "outline_color", "level_color"}) do
+		if not G.suitrank.suitconfig[k] then
+			G.suitrank.suitconfig[k] = {}
+		end
+		if not G.suitrank.rankconfig[k] then
+			G.suitrank.rankconfig[k] = {}
+		end
+	end
+	for i = 1, 4 do
+		G.suitrank.suitconfig.color[i] = G.C.SUITS[G.suitrank.suit][i]
+		G.suitrank.suitconfig.outline_color[i] = G.C.SUITS[G.suitrank.suit][i] * 0.7
+		G.suitrank.suitconfig.level_color[i] = G.C.HAND_LEVELS[G.GAME.suits[G.suitrank.suit].level][i]
+		--todo: create rank colors automatically
+		G.suitrank.rankconfig.color[i] = darken(G.C.SECONDARY_SET.Tarot, 0.5)[i]
+		G.suitrank.rankconfig.outline_color[i] = darken(G.C.SECONDARY_SET.Tarot, 0.65)[i]
+		G.suitrank.rankconfig.level_color[i] = G.C.HAND_LEVELS[G.GAME.ranks[G.suitrank.rank].level][i]
+	end
+	G.suitrank.suitconfig.level = localize('k_level_prefix')..number_format(G.GAME.suits[G.suitrank.suit].level)
+	G.suitrank.suitconfig.count = jl.countsuit()[G.suitrank.suit] or 0
+	G.suitrank.suitconfig.chips = "+"..number_format(G.GAME.suits[G.suitrank.suit].chips)
+	G.suitrank.suitconfig.mult = "+"..number_format(G.GAME.suits[G.suitrank.suit].mult)
+	G.suitrank.rankconfig.level = localize('k_level_prefix')..number_format(G.GAME.ranks[G.suitrank.rank].level)
+	G.suitrank.rankconfig.count = jl.countrank()[G.suitrank.rank] or 0
+	G.suitrank.rankconfig.chips = "+"..number_format(G.GAME.ranks[G.suitrank.rank].chips)
+	G.suitrank.rankconfig.mult = "+"..number_format(G.GAME.ranks[G.suitrank.rank].mult)
+end
+
+function ui_suits_ranks()
+	if not G.suitrank then
+		G.suitrank = {}
+	end
+	if G.suitrank.area then
+		G.suitrank.area:remove()
+	end
+	G.suitrank.area = CardArea(
+        G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
+        G.CARD_W*1.5,
+        G.CARD_H*1.5, 
+        {card_limit = 100, type = 'title', highlight_limit = 0})
+	if not G.suitrank.rank or not G.suitrank.suit or not is_valid_suit_rank(G.suitrank.suit, G.suitrank.rank) then
+		for i = 1, #SMODS.Rank.obj_buffer do
+			local r = SMODS.Rank.obj_buffer[i]
+			for j = 1, #SMODS.Suit.obj_buffer do
+				local s = SMODS.Suit.obj_buffer[j]
+				if is_valid_suit_rank(s, r) then
+					G.suitrank.suit = s
+					G.suitrank.rank = r
+					break
+				end
+			end
+		end
+	end
+	local suitrank_card = Card(0,0,1.5*G.CARD_W,1.5*G.CARD_H,G.P_CARDS.S_A,G.P_CENTERS.c_base)
+	G.suitrank.area:emplace(suitrank_card)
+	if not G.suitrank.suitconfig then
+		G.suitrank.suitconfig = {}
+	end
+	if not G.suitrank.rankconfig then
+		G.suitrank.rankconfig = {}
+	end
+	recalc_suitrank()
+	return {
 		n = G.UIT.ROOT,
 		config = { align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR },
 		nodes = {
-			{
-				n = G.UIT.O,
-				config = {
-					id = 'hand_list',
-					object = UIBox {
-						definition = obj,
-						config = { offset = { x = 0, y = 0 }, align = 'cm' }
-					}
-				}
-			}
+			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR, }, nodes={
+				{n=G.UIT.C, config={align = "cm", colour = G.C.CLEAR, }, nodes={
+					{n = G.UIT.R, config = {minw=2, minh=1.5, colour = G.C.CLEAR, padding = 0.15, align = "bm"}, nodes = {
+						UIBox_button({
+							colour = G.C.FILTER,
+							button = "inc_sr_rank",
+							label = {"^"},
+							scale = 0.6,
+							minw = 1,
+						})
+					}},
+					{n = G.UIT.R, config = {minw=2, minh=1.5, colour = G.C.CLEAR, padding = 0.15}, nodes = {
+						{n=G.UIT.C, config={align = "cr", colour = G.C.CLEAR, }, nodes={
+							UIBox_button({
+								colour = G.C.FILTER,
+								button = "dec_sr_suit",
+								label = {"<"},
+								scale = 0.6,
+								minw = 1,
+							})
+						}},
+						{n=G.UIT.C, config={minw=2.5, align = "cm", colour = G.C.CLEAR, }, nodes={
+							{n=G.UIT.O, config={colour = G.C.BLUE, object = G.suitrank.area, hover = false, can_collide = false}},
+						}},
+						{n=G.UIT.C, config={align = "cl", colour = G.C.CLEAR, }, nodes={
+							UIBox_button({
+								colour = G.C.FILTER,
+								button = "inc_sr_suit",
+								label = {">"},
+								scale = 0.6,
+								minw = 1,
+							})
+						}},
+					}},
+					{n = G.UIT.R, config = {minw=2, minh=1.5, colour = G.C.CLEAR, padding = 0.15, align = "tm"}, nodes = {
+						UIBox_button({
+							colour = G.C.FILTER,
+							button = "dec_sr_rank",
+							label = {"v"},
+							scale = 0.6,
+							minw = 1,
+						})
+					}},
+				}},
+				{n=G.UIT.C, config={align = "cm", colour = G.C.CLEAR, minw = 6, padding = 0.3 }, nodes={
+					{n=G.UIT.R, config={align = "cm", colour = G.suitrank.suitconfig.color, minw = 5, minh = 2, r = 0.2, outline = 1, outline_colour = G.suitrank.suitconfig.outline_color, padding = 0.3}, nodes = {
+						{n = G.UIT.C, config={align = "cm", colour = G.C.CLEAR, minw = 6, r = 0.2, padding = 0.03,}, nodes = {
+							{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR, minw = 6, r = 0.2}, nodes = {
+								{n=G.UIT.C, config={align = "cl", colour = G.C.CLEAR, minw = 5, r = 0.2,}, nodes = {
+									{n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.suitrank.suitconfig, ref_value = "name"}}, scale = 0.8, shadow = true, colours = {G.C.WHITE}})}},
+								}},
+								{n=G.UIT.C, config={align = "cm", padding = 0.05, r = 0.1, colour = G.suitrank.suitconfig.level_color, minw = 1.5, outline = 0.8, outline_colour = G.suitrank.suitconfig.outline_color}, nodes={
+									{n=G.UIT.T, config={ref_table = G.suitrank.suitconfig, ref_value = "level", scale = 0.5, colour = G.C.UI.TEXT_DARK}}
+								}},
+							}},
+							{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR, minw = 6, r = 0.2}, nodes = {
+								{n=G.UIT.C, config={align = "cl"}, nodes={
+									{n=G.UIT.T, config={text = '#', scale = 0.45, colour = G.C.WHITE, shadow = true}}
+								  }},
+								{n=G.UIT.C, config={align = "cm", padding = 0.05, colour = G.suitrank.suitconfig.outline_color,r = 0.1, minw = 0.9}, nodes={
+								  {n=G.UIT.T, config={ref_table = G.suitrank.suitconfig, ref_value = "count", scale = 0.45, colour = G.suitrank.suitconfig.color, shadow = true}},
+								}},
+								{n=G.UIT.C, config={align = "cr", minw = 5.5}, nodes={
+									{n=G.UIT.C, config={align = "cm", padding = 0.03, r = 0.1, colour = G.C.CHIPS, minw = 0.8}, nodes={
+										{n=G.UIT.T, config={ref_table = G.suitrank.suitconfig, ref_value = "chips", scale = 0.45, colour = G.C.UI.TEXT_LIGHT}},
+									}},
+									{n=G.UIT.C, config={align = "cm", padding = 0.03, r = 0.1, colour = G.C.MULT, minw = 0.8}, nodes={
+										{n=G.UIT.T, config={ref_table = G.suitrank.suitconfig, ref_value = "mult", scale = 0.45, colour = G.C.UI.TEXT_LIGHT}}
+									}},
+								}},
+							}},
+						}},
+					}},
+					{n=G.UIT.R, config={align = "cm", colour = G.suitrank.rankconfig.color, minw = 5, minh = 2, r = 0.2, outline = 1, outline_colour = G.suitrank.rankconfig.outline_color, padding = 0.3}, nodes = {
+						{n = G.UIT.C, config={align = "cm", colour = G.C.CLEAR, minw = 6, r = 0.2, padding = 0.03,}, nodes = {
+							{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR, minw = 6, r = 0.2}, nodes = {
+								{n=G.UIT.C, config={align = "cl", colour = G.C.CLEAR, minw = 5, r = 0.2,}, nodes = {
+									{n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.suitrank.rankconfig, ref_value = "name"}}, scale = 0.8, shadow = true, colours = {G.C.WHITE}})}},
+								}},
+								{n=G.UIT.C, config={align = "cm", padding = 0.04, r = 0.1, colour = G.suitrank.rankconfig.level_color, minw = 1.5, outline = 0.8, outline_colour = G.suitrank.rankconfig.outline_color}, nodes={
+									{n=G.UIT.T, config={ref_table = G.suitrank.rankconfig, ref_value = "level", scale = 0.5, colour = G.C.UI.TEXT_DARK}}
+								}},
+							}},
+							{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR, minw = 6, r = 0.2}, nodes = {
+								{n=G.UIT.C, config={align = "cl"}, nodes={
+									{n=G.UIT.T, config={text = '#', scale = 0.45, colour = G.C.WHITE, shadow = true}}
+								  }},
+								{n=G.UIT.C, config={align = "cm", padding = 0.05, colour = G.suitrank.rankconfig.outline_color,r = 0.1, minw = 0.9}, nodes={
+								  {n=G.UIT.T, config={ref_table = G.suitrank.rankconfig, ref_value = "count", scale = 0.45, colour = G.suitrank.rankconfig.color, shadow = true}},
+								}},
+								{n=G.UIT.C, config={align = "cr", minw = 5.5}, nodes={
+									{n=G.UIT.C, config={align = "cm", padding = 0.03, r = 0.1, colour = G.C.CHIPS, minw = 0.8}, nodes={
+										{n=G.UIT.T, config={ref_table = G.suitrank.rankconfig, ref_value = "chips", scale = 0.45, colour = G.C.UI.TEXT_LIGHT}},
+									}},
+									{n=G.UIT.C, config={align = "cm", padding = 0.03, r = 0.1, colour = G.C.MULT, minw = 0.8}, nodes={
+										{n=G.UIT.T, config={ref_table = G.suitrank.rankconfig, ref_value = "mult", scale = 0.45, colour = G.C.UI.TEXT_LIGHT}}
+									}},x
+								}},
+							}},
+						}},
+					}},
+				}}
+			}}
 		}
 	}
-	return t
 end
 
-G.FUNCS.current_suits = function(e, simple)
+G.FUNCS.current_suits_ranks = function(e)
 	G.SETTINGS.paused = true
-	G.FUNCS.overlay_menu{definition = ui_suits(simple)}
-end
-
-G.FUNCS.suit_list = function(args)
-	if not args or not args.cycle_config then return end
-	G.current_suits = {}
-	
-	local counts = jl.countsuit()
-
-	local index = 0
-	for i = #SMODS.Suit.obj_buffer, 1, -1 do
-		local v = SMODS.Suit.obj_buffer[i]
-		local ui_element = ui_suits_row(v, simple, counts[v])
-		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
-			G.current_suits[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
-		end
-
-		if ui_element then
-			index = index + 1
-		end
-
-		if index >= 10 * args.cycle_config.current_option then
-			break
-		end
-	end
-
-	local visible_suits = {}
-	for i = #SMODS.Suit.obj_buffer, 1, -1 do
-		local v = SMODS.Suit.obj_buffer[i]
-		if (counts[v] and counts[v] > 0) or (G.GAME.suits[suit] and G.GAME.suits[suit].level > 1) or (v == "Spades" or v == "Hearts" or v == "Clubs" or v == "Diamonds") then
-			table.insert(visible_suits, v)
-		end
-	end
-
-	local suit_options = {}
-	for i = 1, math.ceil(#visible_suits / 10) do
-		table.insert(suit_options, localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_suits / 10)))
-	end
-
-	local object = {
-		n = G.UIT.ROOT,
-		config = { align = "cm", colour = G.C.CLEAR },
-		nodes = {
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0.04 },
-				nodes = G.current_suits
-			},
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0 },
-				nodes = {
-					create_option_cycle({
-						options = suit_options,
-						w = 4.5,
-						cycle_shoulders = true,
-						opt_callback = 'suit_list',
-						focus_args = { snap_to = true, nav = 'wide' },
-						current_option = args.cycle_config.current_option,
-						colour = G.C.RED,
-						no_pips = true
-					})
-				}
-			}
-		}
-	}
-
-	local suitlist = G.OVERLAY_MENU:get_UIE_by_ID('hand_list')
-	if suitlist then
-		if suitlist.config.object then
-			suitlist.config.object:remove()
-		end
-		suitlist.config.object = UIBox {
-			definition = object,
-			config = { offset = { x = 0, y = 0 }, align = 'cm', parent = suitlist }
-		}
-	end
-end
-
-function ui_suits_row(suit, simple, count)
-	count = count or 0
-  return (count > 0 or G.GAME.suits[suit].level > 1) and
-  (not simple and
-    {n=G.UIT.R, config={align = "cm", padding = 0.05, r = 0.1, colour = darken(G.C.SUITS[suit], 0.1), emboss = 0.05, hover = true, force_focus = true}, nodes={
-      {n=G.UIT.C, config={align = "cl", padding = 0, minw = 5}, nodes={
-        {n=G.UIT.C, config={align = "cm", padding = 0.01, r = 0.1, colour = G.C.HAND_LEVELS[G.GAME.suits[suit].level], minw = 1.5, outline = 0.8, outline_colour = lighten(G.C.SUITS[suit], 0.4)}, nodes={
-          {n=G.UIT.T, config={text = localize('k_level_prefix')..G.GAME.suits[suit].level, scale = 0.5, colour = G.C.UI.TEXT_DARK}}
-        }},
-        {n=G.UIT.C, config={align = "cm", minw = 4.5, maxw = 4.5}, nodes={
-          {n=G.UIT.T, config={text = ' '..localize(suit,'suits_plural'), scale = 0.45, colour = lighten(G.C.SUITS[suit], 0.8), shadow = true}}
-        }}
-      }},
-      {n=G.UIT.C, config={align = "cm", padding = 0.05, colour = darken(G.C.SUITS[suit], 0.6),r = 0.1}, nodes={
-        {n=G.UIT.C, config={align = "cr", padding = 0.01, r = 0.1, colour = G.C.CHIPS, minw = 1.1}, nodes={
-          {n=G.UIT.T, config={text = number_format(G.GAME.suits[suit].chips), scale = 0.45, colour = G.C.UI.TEXT_LIGHT}},
-          {n=G.UIT.B, config={w = 0.08, h = 0.01}}
-        }},
-        {n=G.UIT.T, config={text = "X", scale = 0.45, colour = lighten(G.C.SUITS[suit], 0.5)}},
-        {n=G.UIT.C, config={align = "cl", padding = 0.01, r = 0.1, colour = G.C.MULT, minw = 1.1}, nodes={
-          {n=G.UIT.B, config={w = 0.08,h = 0.01}},
-          {n=G.UIT.T, config={text = number_format(G.GAME.suits[suit].mult), scale = 0.45, colour = G.C.UI.TEXT_LIGHT}}
-        }}
-      }},
-      {n=G.UIT.C, config={align = "cm"}, nodes={
-          {n=G.UIT.T, config={text = '  #', scale = 0.45, colour = lighten(G.C.SUITS[suit],0.6), shadow = true}}
-        }},
-      {n=G.UIT.C, config={align = "cm", padding = 0.05, colour = darken(G.C.SUITS[suit],0.5),r = 0.1, minw = 0.9}, nodes={
-        {n=G.UIT.T, config={text = ""..count, scale = 0.45, colour = lighten(G.C.SUITS[suit],0.4), shadow = true}},
-      }}
-    }}
-  or {n=G.UIT.R, config={align = "cm", padding = 0.05, r = 0.1, colour = darken(G.C.SUITS[suit], 0.1), force_focus = true, emboss = 0.05, hover = true, focus_args = {snap_to = (simple and suit == SMODS.Suit.obj_buffer[#SMODS.Suit.obj_buffer])}}, nodes={
-    {n=G.UIT.C, config={align = "cm", padding = 0, minw = 5}, nodes={
-        {n=G.UIT.T, config={text = localize(suit,'suits_plural'), scale = 0.5, colour = lighten(G.C.SUITS[suit], 0.4), shadow = true}}
-    }}
-  }})
-  or nil
-end
-
-function ui_ranks(simple)
-	G.current_ranks = {}
-	local index = 0
-	
-	local counts = jl.countrank()
-	
-	for i = #SMODS.Rank.obj_buffer, 1, -1 do
-		local v = SMODS.Rank.obj_buffer[i]
-		local ui_element = ui_ranks_row(v, simple, counts[v])
-		G.current_ranks[index + 1] = ui_element
-		if ui_element then
-			index = index + 1
-		end
-		if index >= 10 then
-			break
-		end
-	end
-
-	local visible_ranks = {}
-	for i = #SMODS.Rank.obj_buffer, 1, -1 do
-		local v = SMODS.Rank.obj_buffer[i]
-		if (counts[v] and counts[v] > 0) or (G.GAME.ranks[rank] and G.GAME.ranks[rank].level > 1) then
-			table.insert(visible_ranks, v)
-		end
-	end
-
-	local rank_options = {}
-	for i = 1, math.ceil(#visible_ranks / 10) do
-		table.insert(rank_options, localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_ranks / 10)))
-	end
-
-	local obj = {
-		n = G.UIT.ROOT,
-		config = { align = "cm", colour = G.C.CLEAR },
-		nodes = {
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0.04 },
-				nodes = G.current_ranks
-			},
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0 },
-				nodes = {
-					create_option_cycle({
-						options = rank_options,
-						w = 4.5,
-						cycle_shoulders = true,
-						opt_callback = 'rank_list',
-						focus_args = { snap_to = true, nav = 'wide' },
-						current_option = 1,
-						colour = G.C.RED,
-						no_pips = true
-					})
-				}
-			}
-		}
-	}
-
-	local t = {
-		n = G.UIT.ROOT,
-		config = { align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR },
-		nodes = {
-			{
-				n = G.UIT.O,
-				config = {
-					id = 'hand_list',
-					object = UIBox {
-						definition = obj,
-						config = { offset = { x = 0, y = 0 }, align = 'cm' }
-					}
-				}
-			}
-		}
-	}
-	return t
-end
-
-G.FUNCS.current_ranks = function(e, simple)
-	G.SETTINGS.paused = true
-	G.FUNCS.overlay_menu{definition = ui_ranks(simple)}
-end
-
-G.FUNCS.rank_list = function(args)
-	if not args or not args.cycle_config then return end
-	G.current_ranks = {}
-	
-	local counts = jl.countrank()
-
-	local index = 0
-	for i = #SMODS.Rank.obj_buffer, 1, -1 do
-		local v = SMODS.Rank.obj_buffer[i]
-		local ui_element = ui_ranks_row(v, simple, counts[v])
-		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
-			G.current_ranks[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
-		end
-
-		if ui_element then
-			index = index + 1
-		end
-
-		if index >= 10 * args.cycle_config.current_option then
-			break
-		end
-	end
-
-	local visible_ranks = {}
-	for i = #SMODS.Rank.obj_buffer, 1, -1 do
-		local v = SMODS.Rank.obj_buffer[i]
-		if (counts[v] and counts[v] > 0) or (G.GAME.ranks[rank] and G.GAME.ranks[rank].level > 1) then
-			table.insert(visible_ranks, v)
-		end
-	end
-
-	local rank_options = {}
-	for i = 1, math.ceil(#visible_ranks / 10) do
-		table.insert(rank_options, localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_ranks / 10)))
-	end
-
-	local object = {
-		n = G.UIT.ROOT,
-		config = { align = "cm", colour = G.C.CLEAR },
-		nodes = {
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0.04 },
-				nodes = G.current_ranks
-			},
-			{
-				n = G.UIT.R,
-				config = { align = "cm", padding = 0 },
-				nodes = {
-					create_option_cycle({
-						options = rank_options,
-						w = 4.5,
-						cycle_shoulders = true,
-						opt_callback = 'rank_list',
-						focus_args = { snap_to = true, nav = 'wide' },
-						current_option = args.cycle_config.current_option,
-						colour = G.C.RED,
-						no_pips = true
-					})
-				}
-			}
-		}
-	}
-
-	local ranklist = G.OVERLAY_MENU:get_UIE_by_ID('hand_list')
-	if ranklist then
-		if ranklist.config.object then
-			ranklist.config.object:remove()
-		end
-		ranklist.config.object = UIBox {
-			definition = object,
-			config = { offset = { x = 0, y = 0 }, align = 'cm', parent = ranklist }
-		}
-	end
-end
-
-function ui_ranks_row(rank, simple, count)
-	count = count or 0
-  return (count > 0 or G.GAME.ranks[rank].level > 1) and
-  (not simple and
-    {n=G.UIT.R, config={align = "cm", padding = 0.05, r = 0.1, colour = darken(G.C.SECONDARY_SET.Tarot, 0.5), emboss = 0.05, hover = true, force_focus = true}, nodes={
-      {n=G.UIT.C, config={align = "cl", padding = 0, minw = 5}, nodes={
-        {n=G.UIT.C, config={align = "cm", padding = 0.01, r = 0.1, colour = G.C.HAND_LEVELS[G.GAME.ranks[rank].level], minw = 1.5, outline = 0.8, outline_colour = lighten(G.C.UI.TEXT_LIGHT, 0.4)}, nodes={
-          {n=G.UIT.T, config={text = localize('k_level_prefix')..G.GAME.ranks[rank].level, scale = 0.5, colour = G.C.UI.TEXT_DARK}}
-        }},
-        {n=G.UIT.C, config={align = "cm", minw = 4.5, maxw = 4.5}, nodes={
-          {n=G.UIT.T, config={text = ' ' .. rank .. 's', scale = 0.45, colour = lighten(G.C.UI.TEXT_LIGHT, 0.8), shadow = true}}
-        }}
-      }},
-      {n=G.UIT.C, config={align = "cm", padding = 0.05, colour = darken(G.C.UI.TEXT_LIGHT, 0.6),r = 0.1}, nodes={
-        {n=G.UIT.C, config={align = "cr", padding = 0.01, r = 0.1, colour = G.C.CHIPS, minw = 1.1}, nodes={
-          {n=G.UIT.T, config={text = number_format(G.GAME.ranks[rank].chips), scale = 0.45, colour = G.C.UI.TEXT_LIGHT}},
-          {n=G.UIT.B, config={w = 0.08, h = 0.01}}
-        }},
-        {n=G.UIT.T, config={text = "X", scale = 0.45, colour = G.C.MULT}},
-        {n=G.UIT.C, config={align = "cl", padding = 0.01, r = 0.1, colour = G.C.MULT, minw = 1.1}, nodes={
-          {n=G.UIT.B, config={w = 0.08,h = 0.01}},
-          {n=G.UIT.T, config={text = number_format(G.GAME.ranks[rank].mult), scale = 0.45, colour = G.C.UI.TEXT_LIGHT}}
-        }}
-      }},
-      {n=G.UIT.C, config={align = "cm"}, nodes={
-          {n=G.UIT.T, config={text = '  #', scale = 0.45, colour = lighten(G.C.UI.TEXT_LIGHT,0.6), shadow = true}}
-        }},
-      {n=G.UIT.C, config={align = "cm", padding = 0.05, colour = darken(G.C.UI.TEXT_LIGHT,0.5),r = 0.1, minw = 0.9}, nodes={
-        {n=G.UIT.T, config={text = ""..count, scale = 0.45, colour = lighten(G.C.UI.TEXT_LIGHT,0.4), shadow = true}},
-      }}
-    }}
-  or {n=G.UIT.R, config={align = "cm", padding = 0.05, r = 0.1, colour = darken(G.C.UI.TEXT_LIGHT, 0.1), force_focus = true, emboss = 0.05, hover = true, focus_args = {snap_to = (simple and rank == SMODS.Rank.obj_buffer[#SMODS.Rank.obj_buffer])}}, nodes={
-    {n=G.UIT.C, config={align = "cm", padding = 0, minw = 5}, nodes={
-        {n=G.UIT.T, config={text = rank .. 's', scale = 0.5, colour = lighten(G.C.UI.TEXT_LIGHT, 0.4), shadow = true}}
-    }}
-  }})
-  or nil
+	G.FUNCS.overlay_menu{definition = ui_suits_ranks()}
 end
 
 	local mainmenuref = Game.main_menu
