@@ -2,8 +2,10 @@
 - ~~enhancments~~
 - ~~editions~~
 - jokers
-  - ~~godsmarble jokers~~
+  - godsmarble jokers
+    - the faceless
   - base almanac jokers
+    - crimbo
 - ~~consumables~~
   - ~~planets~~
   - ~~omegas~~
