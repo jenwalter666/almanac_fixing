@@ -2,6 +2,10 @@ LOVELY_INTEGRITY = '5b5e6bd4ded3b36dd87ac7859f5e246dcc55fb9e86f512757f79a32536a1
 
 --Brought to you by the same person who made the quote "The Dark Ages of smods"
 
+jen = SMODS.current_mod
+jen_config = jen.config
+jen.enabled = copy_table(jen_config)
+
 maxArrow = 2.5e4
 
 Incantation.DelayStacking = Incantation.DelayStacking + 10
@@ -412,7 +416,7 @@ Jen = {
 			If there's an item on here you'd prefer unbanned, comment it out by appending two hyphens (-) to the line (I recommend doing it that way) or deleting the line (not recommended).
 			If you want to remove all bans; it's better to change the boolean below this text ("disable_bans") to true.
 		]]
-		disable_bans = false,
+		disable_bans = ban_stat,
 		bans = {
 			--'example_of_commented_out_ban',
 			'!j_cry_chocolate_dice',
@@ -4528,7 +4532,6 @@ if Jen.config.straddle.enabled then
 		apply = function(self)
 			G.GAME.straddle_active = true
 			G.GAME.nitro = true
-			start_straddle()
 		end,
 		trigger_effect = function(self, args)
 			if args.context == "eval" and G.GAME.last_blind and G.GAME.last_blind.boss then
@@ -4772,7 +4775,7 @@ SMODS.Enhancement {
 	unlocked = true,
 	discovered = true,
 	calculate = function(self, card, context, effect)
-		if jl.sc(context) then
+		if context.main_scoring and context.cardarea == G.play then
 			G.E_MANAGER:add_event(Event({trigger = 'after', func = function()
 				local card2 = create_card('Spectral', G.consumeables, nil, nil, nil, nil, nil, 'osmium_card')
 				card2:add_to_deck()
@@ -10268,7 +10271,7 @@ SMODS.Joker {
 		end
 	end,
 	add_to_deck = function(self, card, from_debuff)
-		if not from_debuff and (#SMODS.find_card('j_jen_goob', true) <= 0 or card.ability.mysterious_created) then
+		if not from_debuff and #SMODS.find_card('j_jen_goob', true) <= 0 then
 			local leftie = jl.fc('j_jen_goob_lefthand', 'all')
 			if leftie then leftie:destroy() end
 			local rightie = jl.fc('j_jen_goob_righthand', 'all')
@@ -10286,7 +10289,7 @@ SMODS.Joker {
 		end
 	end,
 	remove_from_deck = function(self, card, from_debuff)
-		if not from_debuff and #SMODS.find_card('j_jen_goob', true) <= 1 then
+		if not from_debuff and #SMODS.find_card('j_jen_goob', true) < 1 then
 			local leftie = jl.fc('j_jen_goob_lefthand', 'all')
 			if leftie then leftie:destroy() end
 			local rightie = jl.fc('j_jen_goob_righthand', 'all')
@@ -10304,7 +10307,7 @@ SMODS.Joker {
 			local rh = jl.fc('j_jen_goob_righthand', 'all') or {}
 			local lhih = (lh.area or {}) == G.hand
 			local rhih = (rh.area or {}) == G.hand
-			if not (next(lh) and next(rh)) and not card.ability.missinghands then
+			if not ((next(lh) and next(rh))) and not card.ability.missinghands then
 				play_sound_q('jen_hurt' .. math.random(3))
 				card:speak(goob_blurbs.hands_lost, G.C.RED)
 				card.ability.missinghands = true
@@ -10312,7 +10315,7 @@ SMODS.Joker {
 					G.hand:change_size(-2)
 					G.GAME.round_resets.temp_handsize = (G.GAME.round_resets.temp_handsize or 0) - 2
 				end
-			elseif (next(lh) and next(rh)) and card.ability.missinghands then
+			elseif ((next(lh) and next(rh))) and card.ability.missinghands then
 				play_sound_q('highlight2', 1, 0.6)
 				card:speak('Recovered!', G.C.GREEN)
 				card.ability.missinghands = false
@@ -10327,8 +10330,8 @@ SMODS.Joker {
 				if context.first_hand_drawn then
 					card:speak(goob_blurbs.addtohand, G.C.CRY_BLOSSOM)
 					Q(function()
-						if next(lh) and next(rh) then
-							if G.hand.config.card_limit < #G.playing_cards and #SMODS.find_card('j_cry_effarcire') then
+						if (next(lh) and next(rh)) then
+							if G.hand.config.card_limit < #G.playing_cards or #SMODS.find_card('j_cry_effarcire') then
 								local firstcard = G.hand.cards[1]
 								local lastcard = G.hand.cards[#G.hand.cards]
 								if firstcard then draw_card(firstcard.area, G.deck, 100, 'down', false, firstcard) end
@@ -10446,6 +10449,7 @@ SMODS.Joker {
 		end
 	end
 }
+
 
 SMODS.Joker {
 	key = 'goob_righthand',
@@ -23531,6 +23535,27 @@ SMODS.Blind	{
 		end
     end
 }
+
+-- CONFIG OPTIONS
+if jen.config.disable_banlist then
+	ban_stat = true
+else
+	ban_stat = false
+end
+
+-- CONFIG TAB
+SMODS.current_mod.config_tab = function()
+    local scale = 5/6
+    return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = G.C.GREY}, nodes = {
+        {n = G.UIT.R, config = { padding = 0.05 }, nodes = {
+            {n = G.UIT.C, config = { minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
+                create_toggle{ label = ("Ban list toggle"), info = {("requires restart to apply changes"), ("Disables the"), ("Ban list for jens almanac")}, active_colour = jen.badge_colour, ref_table = jen.config, ref_value = "disable_banlist" }
+            }}
+        }}
+    }}
+end
+
+
 
 --LOCALISATION
 function SMODS.current_mod.process_loc_text()
