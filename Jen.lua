@@ -6456,7 +6456,7 @@ SMODS.Joker {
         return {vars = {center.ability.c, center.ability.m, Jen.sinister and 'S-STOP THAT!! YOU\'RE FREAKING ME OOOUT!!!' or Jen.gods() and "H-hey, get rid of that thing! It's making my head hurt!!" or "Buzzzzz! I'll do my best!"}}
     end,
     calculate = function(self, card, context)
-		if context.cardarea == G.jokers and not context.before and not context.after then
+		if context.cardarea == G.jokers and context.joker_main then
 			if #G.play.cards > 5 then
 				local excess = #G.play.cards - 5
 				local mod1 = card.ability.c * excess
@@ -6537,7 +6537,7 @@ SMODS.Joker {
         return {vars = {center.ability.add, jl.favhand(), #SMODS.find_card('j_jen_jeremy') > 0 and cheese_quotes.bb[math.random(#cheese_quotes.bb)] or cheese_quotes.normal[math.random(#cheese_quotes.normal)]}}
     end,
     calculate = function(self, card, context)
-		if context.cardarea == G.jokers and not context.before and not context.after and context.poker_hands and context.scoring_name and context.scoring_name == jl.favhand() then
+		if context.cardarea == G.jokers and context.joker_main and context.poker_hands and context.scoring_name and context.scoring_name == jl.favhand() then
 			card_eval_status_text(card, 'extra', nil, nil, nil, {message = cheese_quotes.trigger[math.random(#cheese_quotes.trigger)], colour = G.C.BLUE})
 			ease_hands_played(card.ability.add or 1)
 			return nil, true
@@ -7171,7 +7171,7 @@ SMODS.Joker {
         return {vars = {center.ability.extra.tetration, 1 + (numtags() * center.ability.extra.tetration)}}
     end,
 	calculate = function(self, card, context)
-		if context.cardarea == G.jokers and not context.before and not context.after and context.scoring_name then
+		if context.cardarea == G.jokers and context.joker_main then
 			local tags = numtags()
 			if tags > 0 then
 				local num = 1 + (tags*card.ability.extra.tetration)
@@ -7233,7 +7233,7 @@ SMODS.Joker {
 				end
 			end
 		end
-		if context.cardarea == G.jokers and not context.before and not context.after and context.scoring_name then
+		if context.cardarea == G.jokers and context.joker_main then
 			if to_big(card.ability.extra.em) > to_big(1) then
 				return {
 					message = '^' .. number_format(card.ability.extra.em) .. ' Mult',
@@ -8022,7 +8022,7 @@ SMODS.Joker {
     end,
     calculate = function(self, card, context)
 		local food = numfoodjokers()
-		if context.cardarea == G.jokers and not context.before and not context.after and food > 0 then
+		if context.cardarea == G.jokers and context.joker_main and food > 0 then
 			local power = 2 ^ food
 			return {
 				message = '^' .. power .. ' Mult',
@@ -8352,17 +8352,7 @@ SMODS.Joker {
 					end
 				}))
 			end
-		end
-		if #SMODS.find_card('j_sdm_burger') > 0 then
-			if context.cardarea == G.jokers and not context.before and not context.after then
-				local num = 1 + (card.ability.extra.bouigah ^ #SMODS.find_card('sdm_burger'))
-				return {
-					message = 'Bouigah! (^^' .. num .. ' Mult)',
-					colour = G.C.jen_RGB,
-					EEmult_mod = num
-				}, true
-			end
-		end
+		end -- synergy removed at the request of SDM_0
 	end
 }
 
@@ -8575,7 +8565,7 @@ SMODS.Joker {
         return {vars = {number_format(landa_mod()), Jen.sinister and 'OH GOD, OH NO, OH FU-!!' or Jen.gods() and 'That... thing... have I seen it before?' or 'I must do what I must-... w-wait, was that REALLY my line?'}}
     end,
     calculate = function(self, card, context)
-		if context.cardarea == G.jokers and not context.before and not context.after and context.scoring_name then
+		if context.cardarea == G.jokers and context.joker_main then
 			local mod = landa_mod()
 			return {
 				message = '^' .. mod .. ' Chips & Mult',
@@ -8620,7 +8610,7 @@ SMODS.Joker {
         return {vars = {number_format(landa_mod()), Jen.sinister and 'OH GOD, OH NO, OH FU-!!' or Jen.gods() and 'That... thing... have I seen it before?' or 'I must do what I must-... w-wait, was that REALLY my line?'}}
     end,
     calculate = function(self, card, context)
-		if context.cardarea == G.jokers and not context.before and not context.after and context.scoring_name then
+		if context.cardarea == G.jokers and context.joker_main then
 			local mod = landa_mod()
 			return {
 				message = '^' .. mod .. ' Chips & Mult',
@@ -9199,7 +9189,7 @@ SMODS.Joker {
 			card.ability.tetmult = card.ability.tetmult + (context.card.sell_cost/100)
 			card_eval_status_text(card, 'extra', nil, nil, nil, {message = '^^' .. number_format(card.ability.tetmult + 1) .. ' Mult', colour = G.C.FILTER})
 			return nil, true
-		elseif context.cardarea == G.jokers and not context.before and not context.after and context.scoring_name then
+		elseif context.cardarea == G.jokers and context.joker_main then
 			local num = 1 + (card.ability.tetmult)
 			if num > 1 then
 				return {
@@ -9946,7 +9936,7 @@ SMODS.Joker {
 	wee_incompatible = true,
 	atlas = 'jenjimbo',
     calculate = function(self, card, context)
-		if context.joker_main and context.scoring_name then
+		if context.joker_main then
 			if not context.retrigger_joker then
 				card_eval_status_text(card, 'extra', nil, nil, nil, {message = 'Hee-hee!', colour = G.C.CHIPS})
 				card_eval_status_text(card, 'extra', nil, nil, nil, {message = 'Hoo-hoo!', colour = G.C.MULT})
@@ -10035,7 +10025,7 @@ SMODS.Joker {
         return {vars = {center.ability.extra.tet, 1 + (qty * center.ability.extra.tet)}}
     end,
     calculate = function(self, card, context)
-		if context.cardarea == G.jokers and not context.before and not context.after and context.scoring_name then
+		if context.cardarea == G.jokers and context.joker_main then
 			local vouchers = voucherscount()
 			if vouchers > 0 then
 				local num = 1 + (vouchers*card.ability.extra.tet)
@@ -20848,7 +20838,7 @@ end
 function recalc_suitrank()
 	SMODS.change_base(G.suitrank.card, G.suitrank.suit, G.suitrank.rank)
 	G.suitrank.suitconfig.name = localize(G.suitrank.suit, 'suits_plural')
-	G.suitrank.rankconfig.name = localize(G.suitrank.rank, 'ranks').."s"
+	G.suitrank.rankconfig.name = localize(G.suitrank.rank, 'ranks')
 	for _, k in pairs({"color", "outline_color", "level_color"}) do
 		if not G.suitrank.suitconfig[k] then
 			G.suitrank.suitconfig[k] = {}
