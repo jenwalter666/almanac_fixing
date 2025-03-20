@@ -20847,7 +20847,7 @@ end
 function recalc_suitrank()
 	SMODS.change_base(G.suitrank.card, G.suitrank.suit, G.suitrank.rank)
 	G.suitrank.suitconfig.name = localize(G.suitrank.suit, 'suits_plural')
-	G.suitrank.rankconfig.name = localize(G.suitrank.rank, 'ranks')
+	G.suitrank.rankconfig.name = localize(G.suitrank.rank, 'ranks').."s"
 	for _, k in pairs({"color", "outline_color", "level_color"}) do
 		if not G.suitrank.suitconfig[k] then
 			G.suitrank.suitconfig[k] = {}
