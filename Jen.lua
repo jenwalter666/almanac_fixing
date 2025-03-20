@@ -20830,7 +20830,7 @@ end
 
 local ckpu = Controller.key_press_update
 function Controller:key_press_update(key, dt)
-	if Cryptid.safe_get(G, "suitrank", "area", "cards", 1) then
+	if Cryptid.safe_get(G, "suitrank", "card") then
 		if key == 'left' or key == 'a' then
 			G.FUNCS.dec_sr_suit()
 		elseif key == 'right' or key == 'd' then
@@ -20845,7 +20845,7 @@ function Controller:key_press_update(key, dt)
 end
 
 function recalc_suitrank()
-	SMODS.change_base(G.suitrank.area.cards[1], G.suitrank.suit, G.suitrank.rank)
+	SMODS.change_base(G.suitrank.card, G.suitrank.suit, G.suitrank.rank)
 	G.suitrank.suitconfig.name = localize(G.suitrank.suit, 'suits_plural')
 	G.suitrank.rankconfig.name = localize(G.suitrank.rank, 'ranks')
 	for _, k in pairs({"color", "outline_color", "level_color"}) do
@@ -20875,18 +20875,66 @@ function recalc_suitrank()
 	G.suitrank.rankconfig.mult = "+"..number_format(G.GAME.ranks[G.suitrank.rank].mult)
 end
 
+function UIBox_button_w_sprite(args)
+	args = args or {}
+	args.button = args.button or "exit_overlay_menu"
+	args.func = args.func or nil
+	args.colour = args.colour or G.C.RED
+	args.choice = args.choice or nil
+	args.chosen = args.chosen or nil
+	args.minw = args.minw or 2.7
+	args.maxw = args.maxw or (args.minw - 0.2)
+	if args.minw < args.maxw then args.maxw = args.minw - 0.2 end
+	args.minh = args.minh or 0.9
+	args.scale = args.scale or 0.5
+	args.focus_args = args.focus_args or nil
+	local but_UIT = args.col == true and G.UIT.C or G.UIT.R
+  
+	local but_UI_label = {}
+  
+	local button_pip = nil
+	table.insert(but_UI_label, {n=G.UIT.R, config={align = "cm", padding = 0, minw = args.minw, maxw = args.maxw}, nodes={
+		{n=G.UIT.O, config={object = args.sprite, scale = args.scale, shadow = args.shadow, focus_args = button_pip and args.focus_args or nil, func = button_pip, ref_table = args.ref_table}}
+	}})
+  
+	return 
+	{n= but_UIT, config = {align = 'cm'}, nodes={
+	{n= G.UIT.C, config={
+		align = "cm",
+		padding = args.padding or 0,
+		r = 0.1,
+		hover = true,
+		colour = args.colour,
+		one_press = args.one_press,
+		button = (args.button ~= 'nil') and args.button or nil,
+		choice = args.choice,
+		chosen = args.chosen,
+		focus_args = args.focus_args,
+		minh = args.minh - 0.3*(args.count and 1 or 0),
+		shadow = true,
+		func = args.func,
+		id = args.id,
+		back_func = args.back_func,
+		ref_table = args.ref_table,
+		mid = args.mid
+	  }, nodes=
+	  but_UI_label
+	  }}}
+  end
+local mcp = Moveable.calculate_parrallax
+function Moveable:calculate_parrallax()
+	if self.no_parallax then
+		self.shadow_parrallax = {x = 0, y = 0}
+	end
+	return mcp(self)
+end
 function ui_suits_ranks()
 	if not G.suitrank then
 		G.suitrank = {}
 	end
-	if G.suitrank.area then
-		G.suitrank.area:remove()
+	if G.suitrank.card then
+		G.suitrank.card:remove()
 	end
-	G.suitrank.area = CardArea(
-        G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
-        G.CARD_W*1.5,
-        G.CARD_H*1.5, 
-        {card_limit = 100, type = 'play', highlight_limit = 0})
 	if not G.suitrank.rank or not G.suitrank.suit or not is_valid_suit_rank(G.suitrank.suit, G.suitrank.rank) then
 		for i = 1, #SMODS.Rank.obj_buffer do
 			local r = SMODS.Rank.obj_buffer[i]
@@ -20900,11 +20948,12 @@ function ui_suits_ranks()
 			end
 		end
 	end
-	local suitrank_card = Card(0,0,1.5*G.CARD_W,1.5*G.CARD_H,G.P_CARDS.S_A,G.P_CENTERS.c_base)
-	suitrank_card.ambient_tilt = 0
-	suitrank_card.states.hover.can = false
-	suitrank_card.hover_tilt = 0
-	G.suitrank.area:emplace(suitrank_card)
+	G.suitrank.card = Card(0,0,1.5*G.CARD_W,1.5*G.CARD_H,G.P_CARDS.S_A,G.P_CENTERS.c_base)
+	G.suitrank.card.ambient_tilt = 0
+	G.suitrank.card.states.hover.can = false
+	G.suitrank.card.hover_tilt = 0
+	G.suitrank.card.no_parallax = true
+	G.suitrank.card.shadow = false
 	if not G.suitrank.suitconfig then
 		G.suitrank.suitconfig = {}
 	end
@@ -20919,42 +20968,42 @@ function ui_suits_ranks()
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR, }, nodes={
 				{n=G.UIT.C, config={align = "cm", colour = G.C.CLEAR, }, nodes={
 					{n = G.UIT.R, config = {minw=2, minh=1.5, colour = G.C.CLEAR, padding = 0.15, align = "bm"}, nodes = {
-						UIBox_button({
-							colour = G.C.FILTER,
+						UIBox_button_w_sprite({
+							colour = G.C.CLEAR,
 							button = "inc_sr_rank",
-							label = {"^"},
+							sprite = Sprite(0, 0, 1, 1,  G.ASSET_ATLAS["gamepad_ui"], {x = 10, y = 0}),
 							scale = 0.6,
 							minw = 1,
 						})
 					}},
 					{n = G.UIT.R, config = {minw=2, minh=1.5, colour = G.C.CLEAR, padding = 0.15}, nodes = {
 						{n=G.UIT.C, config={align = "cr", colour = G.C.CLEAR, }, nodes={
-							UIBox_button({
-								colour = G.C.FILTER,
+							UIBox_button_w_sprite({
+								colour = G.C.CLEAR,
 								button = "dec_sr_suit",
-								label = {"<"},
+								sprite = Sprite(0, 0, 1, 1,  G.ASSET_ATLAS["gamepad_ui"], {x = 13, y = 0}),
 								scale = 0.6,
 								minw = 1,
 							})
 						}},
 						{n=G.UIT.C, config={minw=2.5, align = "cm", colour = G.C.CLEAR, }, nodes={
-							{n=G.UIT.O, config={colour = G.C.BLUE, object = G.suitrank.area, hover = false, can_collide = false}},
+							{n=G.UIT.O, config={colour = G.C.BLUE, object = G.suitrank.card, hover = false, can_collide = false}},
 						}},
 						{n=G.UIT.C, config={align = "cl", colour = G.C.CLEAR, }, nodes={
-							UIBox_button({
-								colour = G.C.FILTER,
+							UIBox_button_w_sprite({
+								colour = G.C.CLEAR,
 								button = "inc_sr_suit",
-								label = {">"},
+								sprite = Sprite(0, 0, 1, 1,  G.ASSET_ATLAS["gamepad_ui"], {x = 11, y = 0}),
 								scale = 0.6,
 								minw = 1,
 							})
 						}},
 					}},
 					{n = G.UIT.R, config = {minw=2, minh=1.5, colour = G.C.CLEAR, padding = 0.15, align = "tm"}, nodes = {
-						UIBox_button({
-							colour = G.C.FILTER,
+						UIBox_button_w_sprite({
+							colour = G.C.CLEAR,
 							button = "dec_sr_rank",
-							label = {"v"},
+							sprite = Sprite(0, 0, 1, 1,  G.ASSET_ATLAS["gamepad_ui"], {x = 12, y = 0}),
 							scale = 0.6,
 							minw = 1,
 						})
