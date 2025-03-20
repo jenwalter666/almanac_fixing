@@ -4528,6 +4528,7 @@ if Jen.config.straddle.enabled then
 		apply = function(self)
 			G.GAME.straddle_active = true
 			G.GAME.nitro = true
+			start_straddle()
 		end,
 		trigger_effect = function(self, args)
 			if args.context == "eval" and G.GAME.last_blind and G.GAME.last_blind.boss then
