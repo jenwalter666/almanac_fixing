@@ -467,7 +467,7 @@ end
 
 --This is for better calc in the future, but for now just reuse jl.scj
 function jl.sc(context)
-	return jl.scj(context) --context.cardarea and context.cardarea == G.play and context.main_scoring
+	return context.cardarea and context.cardarea == G.play and context.main_scoring
 end
 
 --Gets the most-played hand
