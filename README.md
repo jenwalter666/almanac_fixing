@@ -10,10 +10,11 @@
   - ~~tarots~~
   - ~~torats~~
   - ~~uno~~
-- ~~decks~~
+- decks
   - ~~Orrery~~
   - ~~Week~~
   - ~~Obsidian~~
   - ~~Tortoise~~
   - ~~acceleration~~
+  - mysterious deck
 - ~~vouchers~~
