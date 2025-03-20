@@ -4,8 +4,8 @@
 - jokers
   - ~~godsmarble jokers~~
   - base almanac jokers
-- consumables
-  - planets
+- ~~consumables~~
+  - ~~planets~~
   - ~~omegas~~
   - ~~tarots~~
   - ~~torats~~
