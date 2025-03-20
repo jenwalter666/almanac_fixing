@@ -12687,7 +12687,7 @@ local inhabited_quotes = {
 		atlas = 'jenwondergeist',
 		calculate = function(self, card, context)
 			if not context.cry_ease_dollars and not context.post_trigger and context.jen_lving then
-				if context.lvs > 0 then
+				if to_big(context.lvs) > to_big(0) then
 					local iterations = math.min(1e3, context.lvs)
 					for i = 1, iterations do
 						G.GAME.hands[context.lv_hand].chips = to_big(G.GAME.hands[context.lv_hand].chips):arrow(2, 2)
@@ -12740,7 +12740,7 @@ local inhabited_quotes = {
 		atlas = 'jenwondergeist2',
 		calculate = function(self, card, context)
 			if not context.cry_ease_dollars and not context.post_trigger and context.jen_lving then
-				if context.lvs > 0 then
+				if to_big(context.lvs) > to_big(0) then
 					local iterations = math.min(1e3, context.lvs)
 					for i = 1, iterations do
 						G.GAME.hands[context.lv_hand].chips = to_big(G.GAME.hands[context.lv_hand].chips):arrow(3, 3)
