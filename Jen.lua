@@ -10686,8 +10686,10 @@ function manage_level_colour(level, force)
 		elseif level > 7200 then
 			new_colour = G.C.DARK_EDITION
 		elseif level >= 1 then
-			local r, g, b = hsv(0.05 * level, 0.05 * math.ceil(level / 360), 1)
-			local r2, g2, b2 = hsv(0.05 * level, 0.05 * math.ceil(level / 360), 0.05 * math.ceil(level / 360))
+			-- I tweaked some of the values here so all levels are clearer.
+			-- Feel free to change the formulas around, this was just done to make the low levels not look white.
+			local r, g, b = hsv(0.05 * level, 0.25 * math.ceil(level / 1800), 1)
+			local r2, g2, b2 = hsv(0.05 * level, 0.25 * math.ceil(level / 1800), 0.05 * math.ceil(level / 360))
 			new_colour = {r, b, g, 1}
 			if not G.C.HAND_LEVELS['!' .. level] then G.C.HAND_LEVELS['!' .. level] = {r2, b2, g2, 1} end
 		end
@@ -20826,6 +20828,22 @@ function G.FUNCS.dec_sr_rank()
 	recalc_suitrank()
 end
 
+local ckpu = Controller.key_press_update
+function Controller:key_press_update(key, dt)
+	if Cryptid.safe_get(G, "suitrank", "area", "cards", 1) then
+		if key == 'left' or key == 'a' then
+			G.FUNCS.dec_sr_suit()
+		elseif key == 'right' or key == 'd' then
+			G.FUNCS.inc_sr_suit()
+		elseif key == 'down' or key == 's' then
+			G.FUNCS.dec_sr_rank()
+		elseif key == 'up' or key == 'w' then
+			G.FUNCS.inc_sr_rank()
+		end
+	end
+	return ckpu(self, key, dt)
+end
+
 function recalc_suitrank()
 	SMODS.change_base(G.suitrank.area.cards[1], G.suitrank.suit, G.suitrank.rank)
 	G.suitrank.suitconfig.name = localize(G.suitrank.suit, 'suits_plural')
@@ -20868,7 +20886,7 @@ function ui_suits_ranks()
         G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
         G.CARD_W*1.5,
         G.CARD_H*1.5, 
-        {card_limit = 100, type = 'title', highlight_limit = 0})
+        {card_limit = 100, type = 'play', highlight_limit = 0})
 	if not G.suitrank.rank or not G.suitrank.suit or not is_valid_suit_rank(G.suitrank.suit, G.suitrank.rank) then
 		for i = 1, #SMODS.Rank.obj_buffer do
 			local r = SMODS.Rank.obj_buffer[i]
@@ -20883,6 +20901,9 @@ function ui_suits_ranks()
 		end
 	end
 	local suitrank_card = Card(0,0,1.5*G.CARD_W,1.5*G.CARD_H,G.P_CARDS.S_A,G.P_CENTERS.c_base)
+	suitrank_card.ambient_tilt = 0
+	suitrank_card.states.hover.can = false
+	suitrank_card.hover_tilt = 0
 	G.suitrank.area:emplace(suitrank_card)
 	if not G.suitrank.suitconfig then
 		G.suitrank.suitconfig = {}
