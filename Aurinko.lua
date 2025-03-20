@@ -508,7 +508,7 @@ function level_up_hand(card, hand, instant, amount)
 						card.aurinko_already_repeated = true
 						local quota = (obj.repetitions or obj.retriggers) * amount
 						local predicted_level = G.GAME.hands[hand].level + quota
-						if predicted_level < 1 then
+						if to_big(predicted_level) < to_big(1) then
 							quota = quota + math.abs(predicted_level) + 1
 						end
 						level_up_hand(card, hand, instant, quota, true, true)
