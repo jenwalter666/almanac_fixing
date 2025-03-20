@@ -2,18 +2,18 @@
 - ~~enhancments~~
 - ~~editions~~
 - jokers
-  - godsmarble jokers
+  - ~~godsmarble jokers~~
   - base almanac jokers
-- consumables
-  - planets
+- ~~consumables~~
+  - ~~planets~~
   - ~~omegas~~
   - ~~tarots~~
-  - torats
+  - ~~torats~~
   - ~~uno~~
-- decks
-  - Orrery
-  - Week
+- ~~decks~~
+  - ~~Orrery~~
+  - ~~Week~~
   - ~~Obsidian~~
-  - Tortoise
-  - acceleration
-- vouchers
+  - ~~Tortoise~~
+  - ~~acceleration~~
+- ~~vouchers~~
