@@ -347,7 +347,7 @@ function level_up_hand(card, hand, instant, amount)
 					end
 					if obj.x_mult then
 						factor = (talisman and to_big(obj.x_mult) or obj.x_mult) ^ math.abs(amount)
-						if amount > 0 then
+						if to_big(amount) > to_big(0) then
 							op = 'x'
 							G.GAME.hands[hand].s_mult = (math.max(get_s_mult(hand) * factor, 1))
 							G.GAME.hands[hand].mult = (math.max(G.GAME.hands[hand].mult * factor, 1))
@@ -374,7 +374,7 @@ function level_up_hand(card, hand, instant, amount)
 					if SMODS.Mods['Talisman'] then
 						if obj.e_mult then
 							factor = math.abs(amount) == 1 and obj.e_mult or to_big(obj.e_mult) ^ math.abs(amount)
-							if amount > 0 then
+							if to_big(amount) > to_big(0) then
 								op = '^'
 								G.GAME.hands[hand].s_mult = (math.max(get_s_mult(hand) ^ factor, 1))
 								G.GAME.hands[hand].mult = (math.max(G.GAME.hands[hand].mult ^ factor, 1))
