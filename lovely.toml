@@ -174,27 +174,56 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "functions/state_events.lua"
-pattern = "table.sort(scoring_hand, function (a, b) return a.T.x < b.T.x end )"
+pattern = "scoring_hand = final_scoring_hand"
 position = "after"
-payload = '''if not (G.GAME.blind and G.GAME.blind.name == "The Card" and not G.GAME.blind.disabled) and (next(SMODS.find_card('j_jen_crimbo')) or next(SMODS.find_card('j_jen_faceless'))) then
-	for i = 1, #G.hand.cards do
-		if not G.hand.cards[i]:gc().unhighlightable then
-			table.insert(scoring_hand, G.hand.cards[i])
-		end
-	end
-end
-if not (G.GAME.blind and G.GAME.blind.name == "The Card" and not G.GAME.blind.disabled) and next(SMODS.find_card('j_jen_faceless')) then
-	for i = 1, #G.deck.cards do
-		if not G.deck.cards[i]:gc().unhighlightable then
-			table.insert(scoring_hand, G.deck.cards[i])
-		end
-	end
-	for i = 1, #G.play.cards do
-		if not G.play.cards[i]:gc().unhighlightable then
-			table.insert(scoring_hand, G.play.cards[i])
-		end
-	end
+payload = '''add_crimbo_cards(scoring_hand)'''
+match_indent = true
+
+# Make other cardareas score (for Crimbo)
+# Add config for making all cards in an area score (for The Faceless)
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "for _, v in ipairs(SMODS.get_card_areas('playing_cards')) do"
+position = "at"
+payload = "for _, v in ipairs(SMODS.get_card_areas('playing_cards', 'main_scoring')) do"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "SMODS.calculate_main_scoring({cardarea = v, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands}, v == G.play and scoring_hand or nil)"
+position = "at"
+payload = "SMODS.calculate_main_scoring({cardarea = v.cardarea or v, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, all_scoring = v.all_scoring}, is_scoring_area(v.cardarea or v) and scoring_hand or nil)"
+match_indent = true
+
+# Don't highlight scoring cards in other areas (via Crimbo)
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "highlight_card(scoring_hand[i],(i-0.999)/5,'up')"
+position = "at"
+payload = '''if scoring_hand[i].area == G.play then
+  highlight_card(scoring_hand[i],(i-0.999)/5,'up')
 end'''
+match_indent = true
+
+# Recalculate played cards (for The Faceless)
+[[patches]]
+[patches.pattern]
+target = '''=[SMODS _ "src/utils.lua"]'''
+pattern = "-- TARGET: add your own CardAreas for playing card evaluation"
+position = "after"
+payload = "if next(SMODS.find_card('j_jen_faceless')) and _context == 'main_scoring' then t[#t+1] = {all_scoring = true, cardarea = G.play} end"
+match_indent = true
+
+# Force cards to score (for The Faceless)
+[[patches]]
+[patches.pattern]
+target = '''=[SMODS _ "src/utils.lua"]'''
+pattern = "local in_scoring = scoring_hand and SMODS.in_scoring(card, context.scoring_hand)"
+position = "at"
+payload = "local in_scoring = context.all_scoring or scoring_hand and SMODS.in_scoring(card, context.scoring_hand)"
 match_indent = true
 
 [[patches]]

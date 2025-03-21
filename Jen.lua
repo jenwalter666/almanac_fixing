@@ -502,7 +502,12 @@ Jen = {
 			'v_betm_vouchers_event_horizon',
 			'v_betm_vouchers_darkness',
 			'v_betm_vouchers_real_random',
-			'v_betm_vouchers_forbidden_area'
+			'v_betm_vouchers_forbidden_area',
+			'b_cry_e_deck',
+			'b_cry_et_deck',
+			'b_cry_sk_deck',
+			'b_cry_st_deck',
+			'b_cry_sl_deck',
 		}
 	}
 }
@@ -9909,6 +9914,33 @@ SMODS.Joker {
         return {vars = {Jen.gods() and crimbo_quotes.gods[math.random(#crimbo_quotes.gods)] or crimbo_quotes.normal[math.random(#crimbo_quotes.normal)]}}
     end,
 }
+
+function add_crimbo_cards(scoring_hand)
+	if not (G.GAME.blind and G.GAME.blind.name == "The Card" and not G.GAME.blind.disabled) and (next(SMODS.find_card('j_jen_crimbo')) or next(SMODS.find_card('j_jen_faceless'))) then
+		for i = 1, #G.hand.cards do
+			if not G.hand.cards[i]:gc().unhighlightable then
+				table.insert(scoring_hand, G.hand.cards[i])
+			end
+		end
+	end
+	if not (G.GAME.blind and G.GAME.blind.name == "The Card" and not G.GAME.blind.disabled) and next(SMODS.find_card('j_jen_faceless')) then
+		for i = 1, #G.deck.cards do
+			if not G.deck.cards[i]:gc().unhighlightable then
+				table.insert(scoring_hand, G.deck.cards[i])
+			end
+		end
+	end
+end
+
+function is_scoring_area(area)
+	if area == G.play then return true end
+	if next(SMODS.find_card('j_jen_crimbo')) then
+		return area == G.hand
+	end
+	if next(SMODS.find_card('j_jen_faceless')) then
+		return area == G.hand or area == G.deck
+	end
+end
 
 SMODS.Joker {
 	key = 'jimbo',
