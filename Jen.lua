@@ -1,10 +1,15 @@
 LOVELY_INTEGRITY = '5b5e6bd4ded3b36dd87ac7859f5e246dcc55fb9e86f512757f79a32536a1770e'
 
 --Brought to you by the same person who made the quote "The Dark Ages of smods"
+jen = (Jen or jen)
 
-jen = SMODS.current_mod
-jen_config = jen.config
-jen.enabled = copy_table(jen_config)
+if not Jen then
+	Jen = {}
+end
+
+Jen = SMODS.current_mod
+Jen_config = SMODS.current_mod.config
+Jen.enabled = copy_table(Jen_config)
 
 maxArrow = 2.5e4
 
@@ -416,7 +421,7 @@ Jen = {
 			If there's an item on here you'd prefer unbanned, comment it out by appending two hyphens (-) to the line (I recommend doing it that way) or deleting the line (not recommended).
 			If you want to remove all bans; it's better to change the boolean below this text ("disable_bans") to true.
 		]]
-		disable_bans = ban_stat,
+		disable_bans = false,
 		bans = {
 			--'example_of_commented_out_ban',
 			'!j_cry_chocolate_dice',
@@ -441,7 +446,7 @@ Jen = {
 			'j_cry_copypaste',
 			'j_cry_flip_side',
 			'j_cry_crustulum', --crusty shit
-			'j_sdm_legionary_joker',
+			--'j_sdm_legionary_joker',
 			'j_sdm_cupidon',
 			'j_sdm_0',
 			'p_mupack_favoritepack',
@@ -536,15 +541,19 @@ local function lore(txt)
 	return Jen.config.show_lore and ('{C:lore,s:0.7,E:2}' .. txt) or ''
 end
 
-function Jen:delete_hardbans()
+function init_cardbans()
 	if not Jen.config.disable_bans then
-		for k, v in ipairs(Jen.config.bans) do
-			if string.sub(v, 1, 1) ~= '!' then
-				if G.P_CENTERS[v] then
-					SMODS.Center:get_obj(v):delete()
-				elseif G.P_BLINDS[v] then
-					G.P_BLINDS[v] = nil
-				end
+		Jen:delete_hardbans()
+	end
+end
+
+function Jen:delete_hardbans()
+	for k, v in ipairs(Jen.config.bans) do
+		if string.sub(v, 1, 1) ~= '!' then
+			if G.P_CENTERS[v] then
+				SMODS.Center:get_obj(v):delete()
+			elseif G.P_BLINDS[v] then
+				G.P_BLINDS[v] = nil
 			end
 		end
 	end
@@ -5027,7 +5036,7 @@ SMODS.Enhancement {
 	unlocked = true,
 	discovered = true,
 	calculate = function(self, card, context, effect)
-		if jl.sc(context) then
+		if context.individual and context.cararea == G.play then
 			for i = 1, 6 do
 				G.E_MANAGER:add_event(Event({trigger = 'after', func = function()
 					local ii = math.ceil(i/2)
@@ -5053,6 +5062,7 @@ SMODS.Enhancement {
 			G.hand:change_size(2)
 			Q(function() add_tag(Tag('tag_double'));add_tag(Tag('tag_double')); return true end)
 			G.GAME.round_resets.temp_handsize = (G.GAME.round_resets.temp_handsize or 0) + 2
+		card:destroy()
 		end
 	end
 }
@@ -10946,10 +10956,10 @@ SMODS.Joker {
     calculate = function(self, card, context)
 		if not context.blueprint_card and not context.destroying_card and not context.cry_ease_dollars and not context.post_trigger then
 			if context.jen_lving and context.card then
-				if not card.ability.maxed and context.lvs < 0 and not context.lv_instant then
+				if not card.ability.maxed and to_big(context.lvs) < to_big(0) and not context.lv_instant then
 					if (G.SETTINGS.STATUSTEXT or 0) < 1 then  card:speak(localize('k_upgrade_ex'), G.C.CRY_ASCENDANT) end
 					card.ability.neutrons = card.ability.neutrons - context.lvs
-					if (Jen.config.astro.initial + (Jen.config.astro.increment * card.ability.neutrons)) >= 1 then
+					if to_big((Jen.config.astro.initial + (Jen.config.astro.increment * card.ability.neutrons))) >= to_big(1) then
 						card.ability.maxed = true
 						card_status_text(card, 'Maxed out!', nil, 0.05*card.T.h, G.C.EDITION, 0.6, 0.6, 2, 2, 'bm', 'jen_enlightened')
 					end
@@ -17830,7 +17840,7 @@ SMODS.Consumable {
 		local fav = jl.favhand()
 		local hands = jl.adjacenthands(fav)
 		local mod = (G.GAME.hands[fav].level / 4) * number
-		if G.GAME.hands[fav].level > 0 then
+		if to_big(G.GAME.hands[fav].level) > to_big(0) then
 			if hands.backhand then
 				card:do_jen_astronomy(hands.backhand, mod)
 				jl.th(hands.backhand)
@@ -17892,7 +17902,7 @@ SMODS.Consumable {
 			delay(2)
 			update_operator_display_custom('+' .. number_format(amt), v)
 			delay(2)
-			if amt > 0 then
+			if to_big(amt) > to_big(0) then
 				local sel = jl.rndhand(nil, 'jen_namaka_' .. string.lower(k))
 				if (G.SETTINGS.FASTFORWARD or 0) < 1 then
 					for i = 1, math.random(3, 6) do
@@ -17925,7 +17935,7 @@ SMODS.Consumable {
 				delay(2/i)
 				update_operator_display_custom('+' .. number_format(amt), v)
 				delay(2/i)
-				if amt > 0 then
+				if to_big(amt) > to_big(0) then
 					local sel = jl.rndhand(nil, 'jen_namaka_' .. string.lower(k))
 					if i == 1 and (G.SETTINGS.FASTFORWARD or 0) < 1 then
 						for i = 1, math.random(3, 6) do
@@ -21440,6 +21450,7 @@ function Card.add_to_deck(self, from_debuff)
 							ease_dollars(self.sell_cost or 0)
 							self:remove_from_deck()
 							self:destroy()
+							self = nil
 							break
 						end
 					end
@@ -23569,10 +23580,8 @@ SMODS.Blind	{
 }
 
 -- CONFIG OPTIONS
-if jen.config.disable_banlist then
-	ban_stat = true
-else
-	ban_stat = false
+if Jen.config.disable_banlist then
+	init_cardbans()
 end
 
 -- CONFIG TAB
