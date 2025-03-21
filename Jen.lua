@@ -10267,7 +10267,6 @@ SMODS.Joker {
 	soul_pos = { x = 1, y = 0 },
 	cost = 12,
 	rarity = 'cry_epic',
-	wee_incompatible = true,
 	unlocked = true,
 	discovered = true,
 	experimental = true,
@@ -10333,7 +10332,7 @@ SMODS.Joker {
 		end
 	end,
 	remove_from_deck = function(self, card, from_debuff)
-		if not from_debuff and #SMODS.find_card('j_jen_goob', true) < 1 then
+		if not from_debuff and #SMODS.find_card('j_jen_goob', true) <= 1 then
 			local leftie = jl.fc('j_jen_goob_lefthand', 'all')
 			if leftie then leftie:destroy() end
 			local rightie = jl.fc('j_jen_goob_righthand', 'all')
@@ -10351,7 +10350,7 @@ SMODS.Joker {
 			local rh = jl.fc('j_jen_goob_righthand', 'all') or {}
 			local lhih = (lh.area or {}) == G.hand
 			local rhih = (rh.area or {}) == G.hand
-			if not ((next(lh) and next(rh))) and not card.ability.missinghands then
+			if not (next(lh) and next(rh)) and not card.ability.missinghands then
 				play_sound_q('jen_hurt' .. math.random(3))
 				card:speak(goob_blurbs.hands_lost, G.C.RED)
 				card.ability.missinghands = true
@@ -10359,7 +10358,7 @@ SMODS.Joker {
 					G.hand:change_size(-2)
 					G.GAME.round_resets.temp_handsize = (G.GAME.round_resets.temp_handsize or 0) - 2
 				end
-			elseif ((next(lh) and next(rh))) and card.ability.missinghands then
+			elseif (next(lh) and next(rh)) and card.ability.missinghands then
 				play_sound_q('highlight2', 1, 0.6)
 				card:speak('Recovered!', G.C.GREEN)
 				card.ability.missinghands = false
