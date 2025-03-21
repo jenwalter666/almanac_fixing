@@ -3753,7 +3753,7 @@ SMODS.Edition{
     end,
 	calculate = function(self, card, context)
 		local retriggers = self.config.retriggers
-		if context.edition and context.cardarea == G.jokers and context.joker_main then
+		if context.edition and context.cardarea == G.jokers and context.joker_main and context.other_joker == self then
 			return { retriggers = self.config.retriggers}
 		end
 		if context.repetition and context.cardarea == G.play then
