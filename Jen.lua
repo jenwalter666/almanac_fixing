@@ -1,11 +1,6 @@
 LOVELY_INTEGRITY = '5b5e6bd4ded3b36dd87ac7859f5e246dcc55fb9e86f512757f79a32536a1770e'
 
 --Brought to you by the same person who made the quote "The Dark Ages of smods"
-jen = (Jen or jen)
-
-if not Jen then
-	Jen = {}
-end
 
 Jen = SMODS.current_mod
 Jen_config = SMODS.current_mod.config
