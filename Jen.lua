@@ -21204,6 +21204,13 @@ G.FUNCS.can_skip_booster = function(e)
 end
 
 function G.FUNCS.text_super_juice(e, _amount, unlimited)
+	if type(_amount) == "table" then
+		if _amount > to_big(1e300) then
+			_amount = 1e300
+		else
+			_amount = _amount:to_number()
+		end
+	end
 	if e and e.config and e.config.object and next(e.config.object) then
 		e.config.object:set_quiver(unlimited and (0.002*_amount) or math.min(1, 0.002*_amount))
 		e.config.object:pulse(unlimited and (0.3 + 0.003*_amount) or math.min(10, 0.3 + 0.003*_amount))
