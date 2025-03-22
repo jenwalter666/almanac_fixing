@@ -441,7 +441,6 @@ Jen = {
 			'j_cry_copypaste',
 			'j_cry_flip_side',
 			'j_cry_crustulum', --crusty shit
-			--'j_sdm_legionary_joker',
 			'j_sdm_cupidon',
 			'j_sdm_0',
 			'p_mupack_favoritepack',
